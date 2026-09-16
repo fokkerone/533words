@@ -5,8 +5,9 @@ import Home from "./page";
 import { useWords, useFlagWord } from "@/hooks/use-words";
 import { clearSession, saveSession } from "@/lib/session-storage";
 import { createSessionState, pickNextWord, type SessionState } from "@/lib/session";
-import { speak } from "@/lib/speech";
+import { speak, listGermanVoices } from "@/lib/speech";
 import { loadSpeed, saveSpeed } from "@/lib/speech-settings";
+import { loadVoiceURI, saveVoiceURI, clearVoiceURI } from "@/lib/voice-settings";
 
 vi.mock("@/hooks/use-words", () => ({
   useWords: vi.fn(),
@@ -15,6 +16,7 @@ vi.mock("@/hooks/use-words", () => ({
 
 vi.mock("@/lib/speech", () => ({
   speak: vi.fn(),
+  listGermanVoices: vi.fn(),
 }));
 
 vi.mock("@/lib/speech-settings", () => ({
@@ -22,10 +24,33 @@ vi.mock("@/lib/speech-settings", () => ({
   saveSpeed: vi.fn(),
 }));
 
+vi.mock("@/lib/voice-settings", () => ({
+  loadVoiceURI: vi.fn(),
+  saveVoiceURI: vi.fn(),
+  clearVoiceURI: vi.fn(),
+}));
+
 const mockedUseWords = vi.mocked(useWords);
 const mockedUseFlagWord = vi.mocked(useFlagWord);
 const mockedLoadSpeed = vi.mocked(loadSpeed);
 const mockedSaveSpeed = vi.mocked(saveSpeed);
+const mockedListGermanVoices = vi.mocked(listGermanVoices);
+const mockedLoadVoiceURI = vi.mocked(loadVoiceURI);
+const mockedSaveVoiceURI = vi.mocked(saveVoiceURI);
+const mockedClearVoiceURI = vi.mocked(clearVoiceURI);
+
+function makeVoice(
+  overrides: Partial<SpeechSynthesisVoice> = {},
+): SpeechSynthesisVoice {
+  return {
+    lang: "de-DE",
+    name: "German",
+    voiceURI: "de-DE-voice",
+    default: false,
+    localService: true,
+    ...overrides,
+  } as SpeechSynthesisVoice;
+}
 
 function makeWords(count: number) {
   return Array.from({ length: count }, (_, i) => ({
@@ -68,6 +93,10 @@ describe("Home practice screen", () => {
     } as unknown as ReturnType<typeof useFlagWord>);
     mockedLoadSpeed.mockReturnValue(1.0);
     mockedSaveSpeed.mockReset();
+    mockedListGermanVoices.mockReturnValue([]);
+    mockedLoadVoiceURI.mockReturnValue(null);
+    mockedSaveVoiceURI.mockReset();
+    mockedClearVoiceURI.mockReset();
     vi.mocked(speak).mockReset();
   });
 
@@ -258,7 +287,7 @@ describe("Home practice screen", () => {
     fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
 
     await waitFor(() => {
-      expect(speak).toHaveBeenCalledWith(expect.any(String), newRate);
+      expect(speak).toHaveBeenCalledWith(expect.any(String), newRate, null);
     });
 
     vi.mocked(speak).mockClear();
@@ -266,7 +295,7 @@ describe("Home practice screen", () => {
     fireEvent.click(await screen.findByRole("button", { name: /^play$/i }));
 
     await waitFor(() => {
-      expect(speak).toHaveBeenCalledWith(expect.any(String), newRate);
+      expect(speak).toHaveBeenCalledWith(expect.any(String), newRate, null);
     });
   });
 
@@ -283,7 +312,7 @@ describe("Home practice screen", () => {
     fireEvent.click(playButton);
 
     await waitFor(() => {
-      expect(speak).toHaveBeenCalledWith(expect.any(String), 0.8);
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 0.8, null);
     });
   });
 
@@ -326,7 +355,111 @@ describe("Home practice screen", () => {
     fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
 
     await waitFor(() => {
-      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.4);
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.4, null);
     });
+  });
+
+  it("lists an 'Automatic' option plus every available German voice in the dropdown", async () => {
+    const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+    const voiceB = makeVoice({ name: "Petra", voiceURI: "petra-uri" });
+    mockedListGermanVoices.mockReturnValue([voiceA, voiceB]);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const combobox = await screen.findByRole("combobox", { name: /stimme|voice/i });
+    fireEvent.click(combobox);
+
+    expect(await screen.findByRole("option", { name: /automat/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Anna" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Petra" })).toBeInTheDocument();
+  });
+
+  it("initializes the voice dropdown from a persisted voiceURI", async () => {
+    const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+    mockedListGermanVoices.mockReturnValue([voiceA]);
+    mockedLoadVoiceURI.mockReturnValue("anna-uri");
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    expect(await screen.findByText("Anna")).toBeInTheDocument();
+  });
+
+  it("selecting a voice persists it and uses it for subsequent playback", async () => {
+    const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+    mockedListGermanVoices.mockReturnValue([voiceA]);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const combobox = await screen.findByRole("combobox", { name: /stimme|voice/i });
+    fireEvent.click(combobox);
+    fireEvent.click(await screen.findByRole("option", { name: "Anna" }));
+
+    await waitFor(() => {
+      expect(mockedSaveVoiceURI).toHaveBeenCalledWith("anna-uri");
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, "anna-uri");
+    });
+  });
+
+  it("returning to 'Automatic' clears the persisted voice and uses automatic selection again", async () => {
+    const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+    mockedListGermanVoices.mockReturnValue([voiceA]);
+    mockedLoadVoiceURI.mockReturnValue("anna-uri");
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const combobox = await screen.findByRole("combobox", { name: /stimme|voice/i });
+    fireEvent.click(combobox);
+    fireEvent.click(await screen.findByRole("option", { name: /automat/i }));
+
+    await waitFor(() => {
+      expect(mockedClearVoiceURI).toHaveBeenCalled();
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, null);
+    });
+  });
+
+  it("updates the dropdown when the voice list finishes loading asynchronously", async () => {
+    // jsdom has no real speechSynthesis; use a minimal EventTarget-based
+    // fake so the component's voiceschanged listener has something real to
+    // attach to and this test can dispatch the event genuinely.
+    class FakeSpeechSynthesis extends EventTarget {}
+    const fakeSynth = new FakeSpeechSynthesis();
+    const original = (window as unknown as { speechSynthesis?: unknown })
+      .speechSynthesis;
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      fakeSynth;
+
+    try {
+      mockedListGermanVoices.mockReturnValue([]);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      expect(screen.queryByText("Anna")).not.toBeInTheDocument();
+
+      const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+      mockedListGermanVoices.mockReturnValue([voiceA]);
+      // Simulate the browser's voiceschanged event firing once the list loads.
+      fakeSynth.dispatchEvent(new Event("voiceschanged"));
+
+      const combobox = await screen.findByRole("combobox", {
+        name: /stimme|voice/i,
+      });
+      fireEvent.click(combobox);
+      expect(
+        await screen.findByRole("option", { name: "Anna" })
+      ).toBeInTheDocument();
+    } finally {
+      (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+        original;
+    }
   });
 });

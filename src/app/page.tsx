@@ -5,9 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useFlagWord, useWords } from "@/hooks/use-words";
-import { speak } from "@/lib/speech";
+import { listGermanVoices, speak } from "@/lib/speech";
 import { loadSpeed, saveSpeed } from "@/lib/speech-settings";
+import { loadVoiceURI, saveVoiceURI, clearVoiceURI } from "@/lib/voice-settings";
 import { loadSession, saveSession } from "@/lib/session-storage";
 import {
   createSessionState,
@@ -38,7 +46,29 @@ export default function Home() {
   const [revealed, setRevealed] = useState(false);
   const [flagError, setFlagError] = useState<string | null>(null);
   const [rate, setRate] = useState<number>(loadSpeed);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(listGermanVoices);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(
+    loadVoiceURI,
+  );
   const autoStarted = useRef(false);
+
+  // Chrome (among others) loads the voice list asynchronously; re-read it
+  // once it finishes so the dropdown reflects the now-available voices
+  // without requiring a reload.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      return;
+    }
+    const synth = window.speechSynthesis;
+    if (typeof synth.addEventListener !== "function") {
+      return;
+    }
+    const handleVoicesChanged = () => setVoices(listGermanVoices());
+    synth.addEventListener("voiceschanged", handleVoicesChanged);
+    return () => {
+      synth.removeEventListener("voiceschanged", handleVoicesChanged);
+    };
+  }, []);
 
   // Auto-start a new session once the word bank has loaded, if no
   // in-progress session was restored from storage and the bank is
@@ -73,7 +103,7 @@ export default function Home() {
     setRevealed(false);
     setFlagError(null);
     if (next.current) {
-      speak(next.current.text, rate);
+      speak(next.current.text, rate, selectedVoiceURI);
     }
     saveSession<SessionState>(next);
   }
@@ -84,13 +114,23 @@ export default function Home() {
 
   function handlePlay() {
     if (!session?.current || revealed) return;
-    speak(session.current.text, rate);
+    speak(session.current.text, rate, selectedVoiceURI);
   }
 
   function handleRateChange(value: number[]) {
     const newRate = value[0];
     setRate(newRate);
     saveSpeed(newRate);
+  }
+
+  function handleVoiceChange(value: string) {
+    if (value === "auto") {
+      setSelectedVoiceURI(null);
+      clearVoiceURI();
+    } else {
+      setSelectedVoiceURI(value);
+      saveVoiceURI(value);
+    }
   }
 
   async function handleFlag(correct: boolean) {
@@ -198,6 +238,25 @@ export default function Home() {
                 <span className="w-10 text-right text-sm text-muted-foreground">
                   {rate.toFixed(2)}x
                 </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Stimme</span>
+                <Select
+                  value={selectedVoiceURI ?? "auto"}
+                  onValueChange={handleVoiceChange}
+                >
+                  <SelectTrigger aria-label="Stimme" className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Automatisch</SelectItem>
+                    {voices.map((voice) => (
+                      <SelectItem key={voice.voiceURI} value={voice.voiceURI}>
+                        {voice.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
