@@ -13,6 +13,19 @@
       "ingested_at": "2026-09-16T00:00:00Z",
       "pages_created": ["techstack/profile"],
       "pages_updated": ["_index"]
+    },
+    {
+      "slug": "flashcard-session",
+      "ingested_at": "2026-09-16T16:32:00Z",
+      "pages_created": [
+        "data/word-bank-schema",
+        "data/Home",
+        "ui/session-state-pattern",
+        "ui/Home",
+        "patterns/fake-db-client-testing",
+        "patterns/Home"
+      ],
+      "pages_updated": ["techstack/profile", "Home", "log", "_meta/taxonomy"]
     }
   ]
 }
