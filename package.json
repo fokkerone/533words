@@ -9,8 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "migrate": "tsx scripts/migrate.ts",
-    "seed": "tsx scripts/seed-words.ts"
+    "migrate": "tsx --env-file=.env.local scripts/migrate.ts",
+    "seed": "tsx --env-file=.env.local scripts/seed-words.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
