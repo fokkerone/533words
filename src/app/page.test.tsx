@@ -134,7 +134,9 @@ describe("Home practice screen", () => {
     expect(await screen.findByRole("alert")).toBeInTheDocument();
 
     // word should still be actionable (not flagged) - flag buttons remain
-    expect(screen.getByRole("button", { name: /^correct$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^incorrect$/i })).toBeInTheDocument();
+    // enabled so the learner can retry, per the spec's "Score write fails"
+    // scenario.
+    expect(screen.getByRole("button", { name: /^correct$/i })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: /^incorrect$/i })).not.toBeDisabled();
   });
 });
