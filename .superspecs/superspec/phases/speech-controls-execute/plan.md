@@ -35,3 +35,11 @@ Task 1.1's subagent updates its own test file's `speak()` calls to pass a rate; 
 ## Human Checkpoints
 - After Wave 1: review speech.ts + speech-settings.ts and their tests (build red is expected and fine at this point)
 - After Wave 2: full verification (lint, build, tests) before `/superspecs:verify`
+
+## Branch
+
+Branch name: `superspec/speech-controls`
+Type: branch
+Worktree path: N/A
+Created from: main @ 172a326
+Created: 2026-09-16
