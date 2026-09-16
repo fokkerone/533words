@@ -1,7 +1,7 @@
 # Flashcard Session (Word Setup + Practice Flow) — Status
 
 ## Phase
-2.3 — Execute › Wave 1 ✅
+2.4 — Execute › Wave 2 ✅
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
