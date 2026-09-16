@@ -55,8 +55,18 @@ export default function Home() {
   // Chrome (among others) loads the voice list asynchronously; re-read it
   // once it finishes so the dropdown reflects the now-available voices
   // without requiring a reload.
+  //
+  // Also re-read it once immediately here, not just on the event: in
+  // practice voiceschanged can fire (and the list finish loading) before
+  // this effect gets a chance to attach its listener — React effects run
+  // after the initial paint, but the event can arrive within that same
+  // window. Relying on the event alone left the dropdown stuck showing
+  // only "Automatic" in real Chrome despite voices being available
+  // moments later, since the event had already come and gone unseen.
   useEffect(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing with an external system (the browser's voice list) on mount, exactly the documented exception to this rule; guards against the voiceschanged event having already fired before this effect's listener could attach.
+    setVoices(listGermanVoices());
+    if (typeof window === "undefined" || !window.speechSynthesis) {
       return;
     }
     const synth = window.speechSynthesis;

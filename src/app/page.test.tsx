@@ -462,4 +462,27 @@ describe("Home practice screen", () => {
         original;
     }
   });
+
+  it("picks up voices already loaded by the time the mount effect runs, even if voiceschanged never fires again", async () => {
+    // Reproduces a real race observed in Chrome: the voice list finishes
+    // loading (and voiceschanged fires) before the component's effect has
+    // attached its listener, so the event is never seen. The first
+    // listGermanVoices() call (the lazy useState initializer, evaluated
+    // synchronously at first render) returns empty; every call after that
+    // returns the now-loaded list, simulating voices becoming available
+    // between the initial render and the effect running - with no event to
+    // rely on.
+    const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+    mockedListGermanVoices.mockReturnValueOnce([]).mockReturnValue([voiceA]);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const combobox = await screen.findByRole("combobox", {
+      name: /stimme|voice/i,
+    });
+    fireEvent.click(combobox);
+    expect(
+      await screen.findByRole("option", { name: "Anna" })
+    ).toBeInTheDocument();
+  });
 });
