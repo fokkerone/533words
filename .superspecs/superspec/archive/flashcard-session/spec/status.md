@@ -1,7 +1,13 @@
 # Flashcard Session (Word Setup + Practice Flow) — Status
 
 ## Phase
-3 — Verify ✅
+4 — Shipped ✅
+
+## Completed
+2026-09-16
+
+## PR
+No GitHub remote configured for this repo — merged directly into `main` locally (merge commit, `--no-ff`) instead of via a PR.
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -16,8 +22,8 @@
 - [x] Code review passed (no Critical findings; several Medium/Low findings fixed during review)
 - [x] Manual end-to-end verification complete (real Turso DB, real browser)
 - [x] Wiki imported
-- [ ] PR created
-- [ ] Archived
+- [x] PR created (N/A — local merge, see above)
+- [x] Archived
 
 ## Test Results
 - Suite: 42 passing, 0 failing, 0 skipped
