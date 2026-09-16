@@ -190,7 +190,12 @@ describe("speak", () => {
     expect(utteranceInstance.rate).toBe(1.25);
   });
 
-  it("selects the correct voice once voiceschanged fires after an initially empty list", () => {
+  it("selects the correct voice once the list finishes loading after an initially empty result", () => {
+    // Some browsers (notably Chrome) return an empty voice list from the
+    // first getVoices() call, populating it asynchronously afterward.
+    // speak() re-reads getVoices() fresh on every call rather than caching
+    // it, so a later call naturally picks up the now-populated list without
+    // needing to listen for the voiceschanged event.
     (
       globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
     ).SpeechSynthesisUtterance = makeUtteranceMock();
@@ -206,9 +211,8 @@ describe("speak", () => {
     };
     expect(firstUtterance.voice).toBeUndefined();
 
-    // Voice list becomes available and voiceschanged fires.
+    // Voice list finishes loading.
     mockSynth.getVoices.mockReturnValue([germanVoice]);
-    mockSynth.__fireVoicesChanged();
 
     // Subsequent call should use the correctly selected voice.
     speak("hello again", 1.0);

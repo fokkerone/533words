@@ -20,37 +20,6 @@ function selectGermanVoice(
   return exactMatch ?? germanVoices[0];
 }
 
-let voicesChangedListenerAttached = false;
-
-/**
- * Ensures a `voiceschanged` listener is attached (once) so that voice
- * selection is re-evaluated once the browser finishes loading its voice
- * list asynchronously. Safe to call repeatedly.
- */
-function ensureVoicesChangedListener(): void {
-  if (voicesChangedListenerAttached) {
-    return;
-  }
-  try {
-    if (
-      typeof window === "undefined" ||
-      !("speechSynthesis" in window) ||
-      typeof window.speechSynthesis.addEventListener !== "function"
-    ) {
-      return;
-    }
-    window.speechSynthesis.addEventListener("voiceschanged", () => {
-      // No-op: voice selection is re-run on every speak() call, so simply
-      // having fired this event is enough for subsequent calls to pick up
-      // the now-populated voice list. This listener's presence is what
-      // matters for browsers that require one to be registered.
-    });
-    voicesChangedListenerAttached = true;
-  } catch {
-    // Ignore — voice selection will just retry on the next speak() call.
-  }
-}
-
 /**
  * Speaks the given text aloud using the browser's Speech Synthesis API, if
  * available. Safe no-op when the API is unavailable or unusable on the
@@ -59,6 +28,12 @@ function ensureVoicesChangedListener(): void {
  * Selects a German voice when one is available (preferring de-DE), applies
  * the given playback rate, and cancels any in-progress speech first so
  * playback never overlaps or queues.
+ *
+ * Voice selection re-reads `getVoices()` fresh on every call rather than
+ * caching it, which is what actually handles browsers (e.g. Chrome) that
+ * populate the voice list asynchronously after startup — no `voiceschanged`
+ * listener is needed, since the next `speak()` call simply sees the
+ * now-populated list.
  */
 export function speak(text: string, rate: number): void {
   try {
@@ -69,8 +44,6 @@ export function speak(text: string, rate: number): void {
     ) {
       return;
     }
-
-    ensureVoicesChangedListener();
 
     const synth = window.speechSynthesis;
     const utterance = new SpeechSynthesisUtterance(text);
