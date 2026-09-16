@@ -69,3 +69,7 @@ None — all raised branches were resolved during this session.
 ## Verdict
 
 **READY** — All decision branches resolved. Proceed to `/superspecs:pick-spec speech-controls`.
+
+## Addendum (2026-09-16, post-execution)
+
+The user requested a manual voice-selection dropdown after Waves 1–2 were already built and reviewed — directly reversing this grill session's original "Out of Scope: Manual voice selection UI" line (which had no `Q&A` behind it; it was an assumption carried from DISCUSS.md, not something explicitly interrogated here). Since the branch was still unshipped, the spec was amended in place rather than restarting the discuss/spec/grill cycle: a new "Manual Voice Selection" requirement was added, the German Voice Selection requirement was updated to note manual selection overrides automatic selection when present, and the Out of Scope line was removed. Also added a genuinely necessary `voiceschanged` listener in the implementation for populating the dropdown — distinct from the one removed as vestigial in Wave 1's code review (that one existed only to help `speak()`'s internal, always-fresh-read voice selection, which needed no event; this one is needed because a dropdown's rendered options must actually update when the async voice list arrives, which re-reading-on-next-call alone cannot do for a list that's rendered once and left alone).

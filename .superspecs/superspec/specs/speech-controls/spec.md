@@ -11,9 +11,9 @@ This feature makes the existing word read-aloud behavior more useful for the lea
 ## Requirements
 
 ### Requirement: German Voice Selection
-The system SHALL speak a word using a voice whose language is German (`de-*`) when at least one such voice is available on the device, preferring a `de-DE` voice if more than one German voice is available.
+The system SHALL speak a word using a voice whose language is German (`de-*`) when at least one such voice is available on the device, preferring a `de-DE` voice if more than one German voice is available, UNLESS the learner has manually selected a specific voice (see Manual Voice Selection), in which case that voice is used instead.
 
-The system SHALL fall back to the device's default voice, without displaying any error or warning, when no German voice is available.
+The system SHALL fall back to the device's default voice, without displaying any error or warning, when no German voice is available and no manual selection has been made.
 
 #### Scenario: A German voice is available
 - GIVEN the device has at least one German-language voice installed
@@ -30,6 +30,48 @@ The system SHALL fall back to the device's default voice, without displaying any
 - GIVEN the browser has not yet finished loading its list of available voices when the app starts
 - WHEN the voice list finishes loading after that point
 - THEN subsequent word playback uses the correctly selected German (or fallback) voice, not an incorrect choice made before the list was ready
+
+### Requirement: Manual Voice Selection
+The system SHALL let the learner choose a specific German voice from a list of all German-language voices available on the device, presented as a dropdown.
+
+The system SHALL use the learner's manually selected voice for all subsequent word playback (automatic and via the Play control), overriding the automatic German Voice Selection logic.
+
+The system SHALL persist the learner's manually selected voice so it remains in effect after a page reload and in future sessions, until the learner changes it again — following the same persistence approach as Speed Persistence.
+
+The system SHALL offer an option to return to automatic voice selection (not tied to any specific voice).
+
+The system SHALL fall back to automatic German Voice Selection when the learner's previously selected voice is no longer available on the device (e.g. after a browser update removes it, or the app is opened on a different device that shares the same persisted preference).
+
+#### Scenario: Dropdown lists available German voices
+- GIVEN the device has one or more German-language voices installed
+- WHEN the learner opens the voice selection dropdown
+- THEN every German-language voice available on the device is listed, plus an "Automatic" option
+
+#### Scenario: Selecting a specific voice
+- GIVEN the learner selects a specific voice from the dropdown
+- WHEN a word is spoken (automatically or via the Play control)
+- THEN that exact voice is used, not the automatically selected one
+
+#### Scenario: Selected voice persists across a reload
+- GIVEN the learner has selected a specific voice
+- WHEN the page is reloaded
+- THEN the same voice is still selected in the dropdown and still used for playback
+
+#### Scenario: Returning to automatic selection
+- GIVEN the learner previously selected a specific voice
+- WHEN the learner chooses the "Automatic" option
+- THEN subsequent playback uses the automatic German Voice Selection logic again, and this choice persists across a reload
+
+#### Scenario: Previously selected voice no longer available
+- GIVEN a specific voice was selected and persisted in an earlier session
+- WHEN the app loads and that voice is not present in the device's current voice list
+- THEN playback falls back to automatic German Voice Selection
+- AND no error is shown to the learner
+
+#### Scenario: Voice list loads asynchronously
+- GIVEN the browser has not yet finished loading its list of available voices when the dropdown is first rendered
+- WHEN the voice list finishes loading after that point
+- THEN the dropdown updates to show the now-available German voices without requiring a page reload
 
 ### Requirement: Playback Speed
 The system SHALL speak words at a configurable rate, adjustable within a range of 0.1x to 2.0x normal speed, defaulting to 1.0x.
@@ -108,7 +150,6 @@ The system SHALL ensure that starting a new instance of word playback (automatic
 
 ## Out of Scope
 
-- Manual voice selection UI (choosing a specific voice by name, gender, or accent) — only automatic German-voice selection as described above.
 - Adjusting pitch, volume, or any Web Speech API parameter other than rate.
 - A warning or error UI shown when no German voice is available — the fallback is silent, by design.
 - Bundled, downloaded, or server-provided TTS voices — relies entirely on voices already available via the browser's Web Speech API.
