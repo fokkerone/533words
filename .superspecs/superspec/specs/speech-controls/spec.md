@@ -32,7 +32,7 @@ The system SHALL fall back to the device's default voice, without displaying any
 - THEN subsequent word playback uses the correctly selected German (or fallback) voice, not an incorrect choice made before the list was ready
 
 ### Requirement: Playback Speed
-The system SHALL speak words at a configurable rate, adjustable within a range of 0.5x to 1.5x normal speed, defaulting to 1.0x.
+The system SHALL speak words at a configurable rate, adjustable within a range of 0.1x to 2.0x normal speed, defaulting to 1.0x.
 
 The currently configured rate SHALL apply to all word playback, whether triggered automatically (on word selection) or manually (via the Play control).
 
@@ -42,7 +42,7 @@ The currently configured rate SHALL apply to all word playback, whether triggere
 - THEN it is spoken at 1.0x (normal) speed
 
 #### Scenario: Adjusted speed applies to playback
-- GIVEN the learner has set the speed to a value within the 0.5x–1.5x range
+- GIVEN the learner has set the speed to a value within the 0.1x–2.0x range
 - WHEN a word is spoken (automatically or via the Play control)
 - THEN it is spoken at that configured rate
 
@@ -100,7 +100,7 @@ The system SHALL ensure that starting a new instance of word playback (automatic
 
 - The system SHALL NOT display an error or warning when no German voice is available on the device (silent fallback, per the German Voice Selection requirement).
 - The system SHALL NOT throw or interrupt the rest of the session flow if speech playback fails for any reason (device/permission issues, API unavailability) — this extends the existing no-throw guarantee of the underlying speech wrapper to the new voice-selection and rate logic.
-- The system SHALL NOT allow the speed control to be set outside the 0.5x–1.5x range.
+- The system SHALL NOT allow the speed control to be set outside the 0.1x–2.0x range.
 
 ## Non-Functional Requirements
 
@@ -119,4 +119,4 @@ The system SHALL ensure that starting a new instance of word playback (automatic
 
 - **German voice:** a voice exposed by the browser's Web Speech API whose language code begins with `de` (e.g. `de-DE`, `de-AT`).
 - **Play control:** a UI control that triggers manual (learner-initiated) playback of the current word, independent of automatic playback.
-- **Rate:** the Web Speech API's playback speed parameter, expressed here as a 0.5x–1.5x multiplier of normal speed.
+- **Rate:** the Web Speech API's playback speed parameter, expressed here as a 0.1x–2.0x multiplier of normal speed.

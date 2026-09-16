@@ -1,6 +1,6 @@
 const SPEECH_SPEED_KEY = "533words:speech-speed";
-const MIN_SPEED = 0.5;
-const MAX_SPEED = 1.5;
+const MIN_SPEED = 0.1;
+const MAX_SPEED = 2.0;
 const DEFAULT_SPEED = 1.0;
 
 function clamp(speed: number): number {

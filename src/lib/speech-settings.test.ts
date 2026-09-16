@@ -19,18 +19,18 @@ describe("speech-settings", () => {
 
   it("clamps an out-of-range value to the nearest bound on save", () => {
     saveSpeed(3.0);
-    expect(loadSpeed()).toBe(1.5);
+    expect(loadSpeed()).toBe(2.0);
 
     saveSpeed(-1);
-    expect(loadSpeed()).toBe(0.5);
+    expect(loadSpeed()).toBe(0.1);
   });
 
   it("clamps an out-of-range stored value on load, independent of save-time clamping", () => {
     localStorage.setItem(SPEECH_SPEED_KEY, JSON.stringify(9.9));
-    expect(loadSpeed()).toBe(1.5);
+    expect(loadSpeed()).toBe(2.0);
 
     localStorage.setItem(SPEECH_SPEED_KEY, JSON.stringify(-9.9));
-    expect(loadSpeed()).toBe(0.5);
+    expect(loadSpeed()).toBe(0.1);
   });
 
   it("returns the 1.0 default instead of throwing when stored data is corrupt or non-numeric", () => {

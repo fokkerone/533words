@@ -189,8 +189,8 @@ export default function Home() {
                 <span className="text-sm text-muted-foreground">Speed</span>
                 <Slider
                   value={[rate]}
-                  min={0.5}
-                  max={1.5}
+                  min={0.1}
+                  max={2.0}
                   step={0.05}
                   onValueChange={handleRateChange}
                   className="flex-1"
