@@ -1,6 +1,6 @@
 ---
 title: Wiki Taxonomy
-updated: ""
+updated: 2026-09-16
 ---
 
 # Wiki Taxonomy
@@ -68,7 +68,11 @@ Tags mirror domain names. Every page gets a tag matching its domain.
 
 ## Topic Tags
 
-_(add project-specific topic tags here)_
+- `flashcard-session` — the flashcard-session feature (practice flow, word bank)
+- `turso` — Turso/libSQL-specific content
+- `state-management` — session/UI state modeling
+- `react` — React-specific patterns
+- `seeding` — data seeding/import scripts
 
 ## Meta Tags
 

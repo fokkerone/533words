@@ -1,0 +1,75 @@
+title: Immutable Session State Pattern
+summary: How flashcard-session models a multi-step practice flow (pick → speak → reveal → flag) as pure, immutable state transitions, kept separate from React and from the DB.
+tags: [ui, flashcard-session, state-management, react]
+spec: "[[flashcard-session]]"
+created: 2026-09-16
+updated: 2026-09-16
+provenance:
+  sources: [specs/flashcard-session/spec.md, specs/flashcard-session/GRILL.md, phases/flashcard-session-execute/review-log.md]
+  extracted: 70%
+  inferred: 25%
+  ambiguous: 5%
+
+# Immutable Session State Pattern
+
+## Summary
+The practice session's state machine (`SessionState`) is pure, framework-free TypeScript — no React, no DB — and every transition returns a new state rather than mutating in place. `src/app/page.tsx` is a thin consumer that wires this pure logic to React state, Tanstack Query, speech, and localStorage.
+
+## Context
+flashcard-session needed session logic (word pool, current word, flag results, completion) to be independently testable, resumable from `localStorage`, and safe against a set of edge cases surfaced during spec-grilling (double-flagging, flagging a non-current word, empty pools). Modeling it as an immutable value type made all of that straightforward to test without React or a DOM.
+
+## Key Decisions
+
+### Pure state object over a React reducer or external state library
+**Chose:** Plain functions over a `SessionState` value (`createSessionState`, `pickNextWord`, `flagWord`, `isSessionComplete`), called from `page.tsx`'s local `useState`.
+**Over:** `useReducer`, Zustand, or another state library.
+**Because:** The logic needed to be testable in isolation (see `src/lib/session.test.ts`'s 19 tests) and serializable directly to `localStorage` via a generic `saveSession<T>`/`loadSession<T>` pair (see below) — a plain object needs no adapter for either.
+**Trade-off:** `page.tsx` has to manually pair every state-changing call with a `saveSession` call; a reducer or store could centralize that, but wasn't judged worth the extra abstraction for a single-page app. ^[inferred]
+
+### DB write before local save, always
+**Chose:** In `handleFlag`, the Turso write (`flagMutation.mutateAsync`) happens and resolves *before* the local `SessionState` is updated and saved.
+**Over:** Optimistic local update first, then a DB write with rollback-on-failure.
+**Because:** The spec's grilled requirement is that a failed score write must leave the word "not yet flagged" (retryable), and a failed *local* save must never roll back an already-successful DB write. Ordering the DB write first makes the second guarantee structural — the local save literally cannot run before the DB write has already succeeded.
+**Trade-off:** No optimistic UI — the flag buttons stay "pending" for the DB round-trip. Acceptable given `useFlagWord`'s `isPending` state is available if a future pass wants a loading indicator; not built in this pass (see Out of Scope in `superspec/specs/flashcard-session/spec.md`: "Visual/interaction design polish").
+
+### Generic, type-parameterized localStorage layer
+**Chose:** `saveSession<T>(state: T)` / `loadSession<T>(): T | null` in `session-storage.ts`, not coupled to `SessionState`.
+**Over:** A `session.ts`-specific `saveSessionState`/`loadSessionState` pair.
+**Because:** `session-storage.ts` was built by a subagent running in parallel with the subagent building `session.ts` — the concrete `SessionState` type didn't exist yet at that point. Keeping the persistence layer generic avoided a cross-task dependency and turned out to be a reasonable design on its own merits (reusable for any future serializable state).
+**Trade-off:** None significant — `page.tsx` just supplies the type parameter (`saveSession<SessionState>(state)`).
+
+## Patterns
+
+### The state shape
+```ts
+type Word = { id: string; text: string; score: number };
+type FlagValue = "correct" | "incorrect";
+type SessionState = {
+  pool: Word[];                        // remaining, not-yet-presented words
+  current: Word | null;                // the word currently shown/being flagged
+  flagged: Record<string, FlagValue>;  // wordId -> how it was flagged this session
+  total: number;                       // pool size at session start, for completion math
+};
+```
+
+### Completion is derived, not stored
+```ts
+isSessionComplete(state) =
+  state.pool.length === 0 &&
+  state.current === null &&
+  Object.keys(state.flagged).length === state.total
+```
+No separate `status: "active" | "complete"` field — completion always follows from the other three fields, so it can't drift out of sync with them.
+
+### Defensive no-ops instead of thrown errors
+`flagWord` silently returns the input state unchanged if the target isn't the current word, or was already flagged, rather than throwing. This matches the spec's "SHALL NOT change score" wording (a behavioral requirement, not an error case) and keeps the UI layer simple — no try/catch needed around state transitions, only around the async DB call.
+
+## Gotchas
+
+- **Two `flagWord` functions, same name, different jobs:** `session.ts`'s `flagWord(state, wordId, correct): SessionState` (pure, in-memory) collided in name with `words.ts`'s original DB-writing function. Caught in code review after both were built in parallel by separate subagents; the DB-writing one was renamed to `writeWordFlag` rather than aliasing imports in the UI layer. Worth remembering if adding more session-adjacent modules: `flagWord`/`flag*` is an easy name to collide on.
+- **Reveal state lives outside `SessionState` on purpose:** whether the current word's text is shown (`revealed`) is local `useState` in `page.tsx`, not part of the persisted session. Confirmed correct behavior in manual testing: reloading mid-session restores the same current word, but re-hides it (learner has to press Reveal again) — this wasn't explicitly speced but fell out naturally from the design and matches the spirit of "don't spoil the answer on refresh."
+
+## Related
+- [[data/word-bank-schema]] — where the `Word`/score data this state operates on comes from
+- [[patterns/fake-db-client-testing]] — how the DB-touching half of the flow (`writeWordFlag`) is tested
+- `src/lib/session.ts`, `src/lib/session-storage.ts`, `src/app/page.tsx` — implementation

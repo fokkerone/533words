@@ -2,7 +2,7 @@ title: Tech Stack Profile
 tags: [techstack, setup, infrastructure]
 created: 2026-09-16
 updated: 2026-09-16
-sources: [techstack-session]
+sources: [techstack-session, flashcard-session]
 
 # Tech Stack Profile
 
@@ -116,9 +116,9 @@ sources: [techstack-session]
 
 ## Open Questions
 
-- [ ] The actual NRW word list (533 words) — not yet loaded into the DB or app
-- [ ] Turso database not yet provisioned — `.env.local` needs real credentials before the app can read/write words
-- [ ] Whether preview/dev deployments should point at a separate Turso DB from production
+- [x] ~~The actual NRW word list (533 words) — not yet loaded into the DB or app~~ — resolved 2026-09-16: real 533-word list seeded via `[[data/word-bank-schema|the word bank]]`'s seed script.
+- [x] ~~Turso database not yet provisioned~~ — resolved 2026-09-16: provisioned and verified working end-to-end (see [[data/word-bank-schema]]).
+- [ ] Whether preview/dev deployments should point at a separate Turso DB from production — still open; same DB used for all environments per `superspec/specs/flashcard-session/spec.md`'s explicit Out of Scope decision.
 
 ## Community Skills
 
@@ -138,8 +138,9 @@ _Note: automated installation of these third-party skills was blocked by the ses
 
 ## Recommended Next Steps
 
-1. Provision a Turso database and fill in `.env.local` (see `.env.local.example`)
-2. Load the 533 NRW word list into the DB
-3. Install the community skills above (copy-paste install commands) if desired
-4. Run `/superspecs:discuss` to plan the session flow feature (next-word selection, speech, flip, thumbs up/down, local storage sync)
-5. Reference this profile in every spec for consistency
+1. ~~Provision a Turso database and fill in `.env.local`~~ — done.
+2. ~~Load the 533 NRW word list into the DB~~ — done, see [[data/word-bank-schema]].
+3. Install the community skills above (copy-paste install commands) if desired — still outstanding.
+4. ~~Run `/superspecs:discuss` to plan the session flow feature~~ — done; see [[ui/session-state-pattern]] and [[patterns/fake-db-client-testing]] for what was built.
+5. Reference this profile in every spec for consistency.
+6. Next feature candidates: a "review hardest words" / spaced-repetition mode (explicitly deferred in `superspec/specs/flashcard-session/spec.md`'s Out of Scope, but the score data it needs already exists).
