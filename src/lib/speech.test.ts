@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { speak } from "./speech";
+import { listGermanVoices, speak } from "./speech";
 
-type MockVoice = { lang: string; name: string };
+type MockVoice = { lang: string; name: string; voiceURI?: string };
 
 function makeUtteranceMock() {
   return vi.fn(function (
@@ -220,5 +220,123 @@ describe("speak", () => {
       voice?: MockVoice;
     };
     expect(secondUtterance.voice).toBe(germanVoice);
+  });
+
+  it("uses the explicitly requested voice when its voiceURI matches an available voice", () => {
+    (
+      globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+    ).SpeechSynthesisUtterance = makeUtteranceMock();
+    const deDeVoice: MockVoice = {
+      lang: "de-DE",
+      name: "German",
+      voiceURI: "de-DE-voice",
+    };
+    const deAtVoice: MockVoice = {
+      lang: "de-AT",
+      name: "Austrian",
+      voiceURI: "de-AT-voice",
+    };
+    const mockSynth = makeSpeechSynthesisMock({
+      voices: [deDeVoice, deAtVoice],
+    });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+
+    // Explicitly request the non-preferred (de-AT) voice — it should win
+    // over the automatic de-DE preference.
+    speak("hallo", 1.0, "de-AT-voice");
+
+    const utteranceInstance = mockSynth.speak.mock.calls[0][0] as {
+      voice?: MockVoice;
+    };
+    expect(utteranceInstance.voice).toBe(deAtVoice);
+  });
+
+  it("falls back to automatic selection when the requested voiceURI is not found", () => {
+    (
+      globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+    ).SpeechSynthesisUtterance = makeUtteranceMock();
+    const deDeVoice: MockVoice = {
+      lang: "de-DE",
+      name: "German",
+      voiceURI: "de-DE-voice",
+    };
+    const mockSynth = makeSpeechSynthesisMock({ voices: [deDeVoice] });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+
+    speak("hallo", 1.0, "some-voice-uri-that-no-longer-exists");
+
+    const utteranceInstance = mockSynth.speak.mock.calls[0][0] as {
+      voice?: MockVoice;
+    };
+    expect(utteranceInstance.voice).toBe(deDeVoice);
+  });
+
+  it("falls back to automatic selection when no voiceURI is given (undefined or null)", () => {
+    (
+      globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+    ).SpeechSynthesisUtterance = makeUtteranceMock();
+    const deDeVoice: MockVoice = {
+      lang: "de-DE",
+      name: "German",
+      voiceURI: "de-DE-voice",
+    };
+    const mockSynth = makeSpeechSynthesisMock({ voices: [deDeVoice] });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+
+    speak("hallo", 1.0, null);
+
+    const utteranceInstance = mockSynth.speak.mock.calls[0][0] as {
+      voice?: MockVoice;
+    };
+    expect(utteranceInstance.voice).toBe(deDeVoice);
+  });
+});
+
+describe("listGermanVoices", () => {
+  const originalSpeechSynthesis = (
+    window as unknown as { speechSynthesis?: unknown }
+  ).speechSynthesis;
+
+  afterEach(() => {
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      originalSpeechSynthesis;
+    vi.restoreAllMocks();
+  });
+
+  it("returns only voices whose lang starts with de", () => {
+    const deDeVoice: MockVoice = { lang: "de-DE", name: "German" };
+    const deAtVoice: MockVoice = { lang: "de-AT", name: "Austrian" };
+    const mockSynth = makeSpeechSynthesisMock({
+      voices: [
+        { lang: "en-US", name: "English" },
+        deDeVoice,
+        deAtVoice,
+        { lang: "fr-FR", name: "French" },
+      ],
+    });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+
+    expect(listGermanVoices()).toEqual([deDeVoice, deAtVoice]);
+  });
+
+  it("returns an empty array when speechSynthesis is unavailable", () => {
+    delete (window as unknown as { speechSynthesis?: unknown })
+      .speechSynthesis;
+
+    expect(listGermanVoices()).toEqual([]);
+  });
+
+  it("returns an empty array when no German voices are present", () => {
+    const mockSynth = makeSpeechSynthesisMock({
+      voices: [{ lang: "en-US", name: "English" }],
+    });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+
+    expect(listGermanVoices()).toEqual([]);
   });
 });
