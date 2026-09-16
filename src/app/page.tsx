@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Slider } from "@/components/ui/slider";
 import { useFlagWord, useWords } from "@/hooks/use-words";
 import { speak } from "@/lib/speech";
+import { loadSpeed, saveSpeed } from "@/lib/speech-settings";
 import { loadSession, saveSession } from "@/lib/session-storage";
 import {
   createSessionState,
@@ -35,6 +37,7 @@ export default function Home() {
   const [session, setSession] = useState<SessionState | null>(restoreSession);
   const [revealed, setRevealed] = useState(false);
   const [flagError, setFlagError] = useState<string | null>(null);
+  const [rate, setRate] = useState<number>(loadSpeed);
   const autoStarted = useRef(false);
 
   // Auto-start a new session once the word bank has loaded, if no
@@ -70,13 +73,24 @@ export default function Home() {
     setRevealed(false);
     setFlagError(null);
     if (next.current) {
-      speak(next.current.text);
+      speak(next.current.text, rate);
     }
     saveSession<SessionState>(next);
   }
 
   function handleReveal() {
     setRevealed(true);
+  }
+
+  function handlePlay() {
+    if (!session?.current || revealed) return;
+    speak(session.current.text, rate);
+  }
+
+  function handleRateChange(value: number[]) {
+    const newRate = value[0];
+    setRate(newRate);
+    saveSpeed(newRate);
   }
 
   async function handleFlag(correct: boolean) {
@@ -159,6 +173,33 @@ export default function Home() {
               <AlertTitle>Could not save score</AlertTitle>
               <AlertDescription>{flagError}</AlertDescription>
             </Alert>
+          )}
+
+          {!complete && (
+            <div className="flex w-full flex-col gap-2">
+              <Button
+                onClick={handlePlay}
+                disabled={!session?.current || revealed}
+                variant="outline"
+                className="w-full"
+              >
+                Play
+              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Speed</span>
+                <Slider
+                  value={[rate]}
+                  min={0.5}
+                  max={1.5}
+                  step={0.05}
+                  onValueChange={handleRateChange}
+                  className="flex-1"
+                />
+                <span className="w-10 text-right text-sm text-muted-foreground">
+                  {rate.toFixed(2)}x
+                </span>
+              </div>
+            </div>
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3">

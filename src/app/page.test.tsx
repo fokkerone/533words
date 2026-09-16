@@ -5,6 +5,8 @@ import Home from "./page";
 import { useWords, useFlagWord } from "@/hooks/use-words";
 import { clearSession, saveSession } from "@/lib/session-storage";
 import { createSessionState, pickNextWord, type SessionState } from "@/lib/session";
+import { speak } from "@/lib/speech";
+import { loadSpeed, saveSpeed } from "@/lib/speech-settings";
 
 vi.mock("@/hooks/use-words", () => ({
   useWords: vi.fn(),
@@ -15,8 +17,15 @@ vi.mock("@/lib/speech", () => ({
   speak: vi.fn(),
 }));
 
+vi.mock("@/lib/speech-settings", () => ({
+  loadSpeed: vi.fn(),
+  saveSpeed: vi.fn(),
+}));
+
 const mockedUseWords = vi.mocked(useWords);
 const mockedUseFlagWord = vi.mocked(useFlagWord);
+const mockedLoadSpeed = vi.mocked(loadSpeed);
+const mockedSaveSpeed = vi.mocked(saveSpeed);
 
 function makeWords(count: number) {
   return Array.from({ length: count }, (_, i) => ({
@@ -57,6 +66,9 @@ describe("Home practice screen", () => {
       error: null,
       isSuccess: false,
     } as unknown as ReturnType<typeof useFlagWord>);
+    mockedLoadSpeed.mockReturnValue(1.0);
+    mockedSaveSpeed.mockReset();
+    vi.mocked(speak).mockReset();
   });
 
   it("shows the word text after Next Word then reveal", async () => {
@@ -217,5 +229,104 @@ describe("Home practice screen", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
     expect(await screen.findByText(currentWordText)).toBeInTheDocument();
+  });
+
+  it("initializes the speed slider from the persisted speed, not the 1.0 default", async () => {
+    mockedLoadSpeed.mockReturnValue(0.75);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const slider = await screen.findByRole("slider");
+    await waitFor(() => {
+      expect(slider).toHaveAttribute("aria-valuenow", "0.75");
+    });
+  });
+
+  it("persists and applies a new speed when the slider is changed", async () => {
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const slider = await screen.findByRole("slider");
+    fireEvent.keyDown(slider, { key: "ArrowRight" });
+
+    await waitFor(() => {
+      expect(mockedSaveSpeed).toHaveBeenCalled();
+    });
+    const newRate = mockedSaveSpeed.mock.calls[0][0];
+    expect(newRate).not.toBe(1.0);
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), newRate);
+    });
+
+    vi.mocked(speak).mockClear();
+
+    fireEvent.click(await screen.findByRole("button", { name: /^play$/i }));
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), newRate);
+    });
+  });
+
+  it("Play button speaks the current word at the current rate before reveal", async () => {
+    mockedLoadSpeed.mockReturnValue(0.8);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+    vi.mocked(speak).mockClear();
+
+    const playButton = screen.getByRole("button", { name: /^play$/i });
+    expect(playButton).not.toBeDisabled();
+    fireEvent.click(playButton);
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 0.8);
+    });
+  });
+
+  it("disables the Play button once the current word has been revealed", async () => {
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+    const playButton = await screen.findByRole("button", { name: /^play$/i });
+    expect(playButton).not.toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^play$/i })).toBeDisabled();
+    });
+
+    vi.mocked(speak).mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /^play$/i }));
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it("disables the Play button when there is no current word", async () => {
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /next word/i })).toBeInTheDocument();
+    });
+
+    const playButton = screen.getByRole("button", { name: /^play$/i });
+    expect(playButton).toBeDisabled();
+  });
+
+  it("uses the current persisted rate for automatic playback on Next Word", async () => {
+    mockedLoadSpeed.mockReturnValue(1.4);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.4);
+    });
   });
 });
