@@ -1,7 +1,7 @@
 # Flashcard Session (Word Setup + Practice Flow) — Status
 
 ## Phase
-2.1 — Execute › Pick Spec ✅
+2.3 — Execute › Wave 1 ✅
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -10,7 +10,7 @@
 - [x] Spec grilled and stress-tested (GRILL.md)
 - [x] Wiki conflicts: none
 - [x] Techstack conflicts: none (concurrent-write concern scoped out)
-- [ ] Branch created
+- [x] Branch created (superspec/flashcard-session)
 - [ ] Subagent execution complete
 - [ ] All tests passing
 - [ ] Code review passed (no Critical findings)

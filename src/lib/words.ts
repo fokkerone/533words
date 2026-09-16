@@ -29,12 +29,15 @@ export async function fetchWords(client: DbClient): Promise<Word[]> {
  * persists it. Reads the current score first so the adjustment is relative
  * to what's actually in the DB, then writes the new score.
  *
+ * Named distinctly from `session.ts`'s `flagWord` (a pure in-memory session
+ * state reducer) since both are needed together when wiring up the UI.
+ *
  * Deliberately does NOT catch/swallow errors: if either the read or the
  * write rejects (e.g. a network failure), that rejection propagates to the
  * caller so it can surface a distinguishable error state (per the "Score
  * write fails" scenario) instead of failing silently.
  */
-export async function flagWord(
+export async function writeWordFlag(
   client: DbClient,
   wordId: string,
   correct: boolean
@@ -46,7 +49,7 @@ export async function flagWord(
 
   const row = existing.rows[0];
   if (!row) {
-    throw new Error(`flagWord: no word found with id "${wordId}"`);
+    throw new Error(`writeWordFlag: no word found with id "${wordId}"`);
   }
 
   const newScore = adjustScore(row.score, correct);

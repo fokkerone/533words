@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjustScore, fetchWords, flagWord } from "./words";
+import { adjustScore, fetchWords, writeWordFlag } from "./words";
 
 type FakeArgs = Record<string, unknown> | unknown[];
 type FakeStatement = { sql: string; args?: FakeArgs };
@@ -105,11 +105,11 @@ describe("fetchWords", () => {
   });
 });
 
-describe("flagWord", () => {
+describe("writeWordFlag", () => {
   it("writes the adjusted score to the DB when marked correct", async () => {
     const client = makeFakeClient([{ id: "1", text: "Fahrrad", score: 2 }]);
 
-    const result = await flagWord(client, "1", true);
+    const result = await writeWordFlag(client, "1", true);
 
     expect(result.score).toBe(3);
     expect(client.rows.get("1")?.score).toBe(3);
@@ -120,7 +120,7 @@ describe("flagWord", () => {
   it("writes the adjusted score to the DB when marked incorrect", async () => {
     const client = makeFakeClient([{ id: "1", text: "Fahrrad", score: 2 }]);
 
-    const result = await flagWord(client, "1", false);
+    const result = await writeWordFlag(client, "1", false);
 
     expect(result.score).toBe(1);
     expect(client.rows.get("1")?.score).toBe(1);
@@ -129,7 +129,7 @@ describe("flagWord", () => {
   it("surfaces a distinguishable error instead of silently swallowing a failed write", async () => {
     const client = makeFailingWriteClient([{ id: "1", text: "Fahrrad", score: 2 }]);
 
-    await expect(flagWord(client, "1", true)).rejects.toThrow(
+    await expect(writeWordFlag(client, "1", true)).rejects.toThrow(
       "network error: write failed"
     );
   });

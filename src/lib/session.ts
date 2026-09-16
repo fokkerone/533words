@@ -49,11 +49,6 @@ export function pickNextWord(state: SessionState): SessionState {
   return { ...state, pool: newPool, current: word };
 }
 
-/** Applies a correct/incorrect score adjustment to a word. */
-export function applyScore(word: Word, correct: boolean): Word {
-  return { ...word, score: word.score + (correct ? 1 : -1) };
-}
-
 /**
  * Flags the currently selected word as correct or incorrect. No-op
  * (returns the state unchanged) if the targeted word is not the current

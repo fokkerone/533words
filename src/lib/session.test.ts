@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  applyScore,
   createSessionState,
   flagWord,
   isSessionComplete,
@@ -41,18 +40,6 @@ describe("startSession", () => {
     const sessionIds = session.map((w) => w.id).sort();
     const wordIds = words.map((w) => w.id).sort();
     expect(sessionIds).toEqual(wordIds);
-  });
-});
-
-describe("applyScore", () => {
-  it("increments score by 1 when correct", () => {
-    const word: Word = { id: "w1", text: "haus", score: 0 };
-    expect(applyScore(word, true).score).toBe(1);
-  });
-
-  it("decrements score by 1 when incorrect", () => {
-    const word: Word = { id: "w1", text: "haus", score: 0 };
-    expect(applyScore(word, false).score).toBe(-1);
   });
 });
 

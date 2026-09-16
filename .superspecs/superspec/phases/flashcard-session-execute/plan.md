@@ -42,3 +42,13 @@ Wave 1 and Wave 2 subagents must use the fake DB client approach specified in ta
 
 ## Known Blockers
 - CSV file of the 533 NRW words has not yet been provided — Task 3.2 (manual verification) cannot fully complete without it, though the rest of the feature can be built and tested.
+
+## Branch
+
+Branch name: `superspec/flashcard-session`
+Type: branch
+Worktree path: N/A
+Created from: main @ 24a7648
+Created: 2026-09-16
+
+Note: repo had no git history before this spec — `main` was initialized fresh with a single baseline commit (project scaffold + planning docs for this spec) before branching.
