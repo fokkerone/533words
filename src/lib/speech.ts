@@ -1,9 +1,9 @@
 /**
- * Selects the preferred German voice from a list of available voices:
- * the first voice whose `lang` starts with "de", preferring an exact
- * "de-DE" match when more than one German voice is available. Returns
- * undefined when no German voice is present, so callers fall back to the
- * browser's own default voice.
+ * Selects the preferred German voice from a list of available voices, in
+ * order: a voice named "Google Deutsch" (the default, when present — a
+ * higher-quality cloud voice on Chrome); otherwise a "de-DE" voice;
+ * otherwise any other "de-*" voice. Returns undefined when no German voice
+ * is present, so callers fall back to the browser's own default voice.
  */
 function selectGermanVoice(
   voices: SpeechSynthesisVoice[],
@@ -13,6 +13,12 @@ function selectGermanVoice(
   );
   if (germanVoices.length === 0) {
     return undefined;
+  }
+  const googleVoice = germanVoices.find(
+    (voice) => voice.name.toLowerCase() === "google deutsch",
+  );
+  if (googleVoice) {
+    return googleVoice;
   }
   const exactMatch = germanVoices.find(
     (voice) => voice.lang.toLowerCase() === "de-de",
@@ -52,10 +58,10 @@ export function listGermanVoices(): SpeechSynthesisVoice[] {
  * Voice selection: if `voiceURI` is given and matches a currently available
  * voice, that exact voice is used (the learner's manual choice). Otherwise
  * — no `voiceURI`, or it names a voice no longer available on this device —
- * falls back to automatic selection (preferring de-DE, then any de-* voice,
- * then the browser's own default). Applies the given playback rate, and
- * cancels any in-progress speech first so playback never overlaps or
- * queues.
+ * falls back to automatic selection (preferring "Google Deutsch", then
+ * de-DE, then any de-* voice, then the browser's own default). Applies the
+ * given playback rate, and cancels any in-progress speech first so
+ * playback never overlaps or queues.
  *
  * Voice selection re-reads `getVoices()` fresh on every call rather than
  * caching it, which is what actually handles browsers (e.g. Chrome) that

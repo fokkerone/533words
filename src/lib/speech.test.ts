@@ -130,6 +130,27 @@ describe("speak", () => {
     expect(utteranceInstance.voice).toBe(deDeVoice);
   });
 
+  it("prefers a voice named 'Google Deutsch' over de-DE and any other German voice", () => {
+    (
+      globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+    ).SpeechSynthesisUtterance = makeUtteranceMock();
+    const deDeVoice: MockVoice = { lang: "de-DE", name: "Anna" };
+    const googleVoice: MockVoice = { lang: "de-DE", name: "Google Deutsch" };
+    const deAtVoice: MockVoice = { lang: "de-AT", name: "Austrian" };
+    const mockSynth = makeSpeechSynthesisMock({
+      voices: [deAtVoice, deDeVoice, googleVoice],
+    });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+
+    speak("hallo", 1.0);
+
+    const utteranceInstance = mockSynth.speak.mock.calls[0][0] as {
+      voice?: MockVoice;
+    };
+    expect(utteranceInstance.voice).toBe(googleVoice);
+  });
+
   it("does not force a voice when no German voice is present", () => {
     (
       globalThis as unknown as { SpeechSynthesisUtterance?: unknown }

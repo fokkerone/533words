@@ -11,14 +11,14 @@ This feature makes the existing word read-aloud behavior more useful for the lea
 ## Requirements
 
 ### Requirement: German Voice Selection
-The system SHALL speak a word using a voice whose language is German (`de-*`) when at least one such voice is available on the device, preferring a `de-DE` voice if more than one German voice is available, UNLESS the learner has manually selected a specific voice (see Manual Voice Selection), in which case that voice is used instead.
+The system SHALL speak a word using a voice whose language is German (`de-*`) when at least one such voice is available on the device, preferring — in order — a voice named "Google Deutsch" if present, then a `de-DE` voice, then any other `de-*` voice, UNLESS the learner has manually selected a specific voice (see Manual Voice Selection), in which case that voice is used instead.
 
 The system SHALL fall back to the device's default voice, without displaying any error or warning, when no German voice is available and no manual selection has been made.
 
 #### Scenario: A German voice is available
 - GIVEN the device has at least one German-language voice installed
 - WHEN a word is spoken (automatically or via the Play control)
-- THEN the German voice is used (the `de-DE` voice, if more than one German voice exists)
+- THEN the German voice is used (preferring "Google Deutsch", then `de-DE`, if more than one German voice exists)
 
 #### Scenario: No German voice is available
 - GIVEN the device has no German-language voice installed
