@@ -1,0 +1,319 @@
+---
+name: verify-wiki
+description: Distill a completed, verified feature into the project wiki. Architecture decisions, patterns, trade-offs, gotchas. The knowledge that should outlive this session. Invoked as Stage 2 of /superspecs:verify. Can also be triggered standalone on /wiki, "import to wiki", "document the feature". Runs after tests pass.
+slash_command: wiki
+phase: "3 — Verify › Stage 2 Wiki Import"
+---
+
+# Skill: verify-wiki
+
+You are distilling the completed feature into the living project wiki.
+
+The feature works. The tests pass. Now you extract the knowledge that should survive beyond this session — so future planning, future features, and future sessions start informed.
+
+The wiki lives at `superspec/wiki/` and doubles as an **Obsidian vault**. Write every page to be navigable in Obsidian: use `[[wikilinks]]` for internal links, YAML frontmatter with `tags:`, and keep each page focused on a single knowledge unit.
+
+## What to distill (and what not to)
+
+**Distill:**
+- Architecture decisions (what was chosen and why)
+- Patterns discovered or established
+- Trade-offs made (what was given up, what was gained)
+- Gotchas (things harder than expected + how they were solved)
+- Key interfaces / contracts / data shapes
+- Open questions deferred to future work
+
+**Do NOT copy:**
+- Full code listings (reference file paths instead)
+- Task checklists or execution logs
+- The full spec (it lives in `superspec/specs/`)
+
+## Provenance
+
+Mark the origin of every claim so future readers know what is fact vs. synthesis:
+
+- Default (no marker): directly extracted from source material
+- `^[inferred]` — synthesized by the agent; not stated verbatim in sources
+- `^[ambiguous]` — sources disagree or the claim is uncertain
+
+Example:
+```
+The team chose Redis over Postgres for session storage because of latency requirements.
+A TTL of 15 minutes was selected as the balance point. ^[inferred]
+Note: the DISCUSS.md mentions 10 minutes but the spec says 15 — see review-log. ^[ambiguous]
+```
+
+---
+
+## Steps
+
+### 1. Gather the source material
+
+Read:
+- `superspec/specs/<slug>/DISCUSS.md`
+- `superspec/specs/<slug>/spec.md`
+- `superspec/phases/<slug>-execute/review-log.md`
+- The implementation itself (key files touched)
+
+---
+
+### 2. Scan existing wiki pages first
+
+**Before writing anything new**, scan the existing wiki for related content.
+
+```
+superspec/wiki/
+├── Home.md              ← read first: domain index
+├── log.md               ← read: recent activity
+└── <domain>/
+    ├── Home.md          ← domain index
+    └── *.md             ← existing knowledge pages
+```
+
+For each existing page that overlaps with this feature:
+- **Update it** — don't create a duplicate. Add a new `## <New Section>` or extend existing sections.
+- Mark it with `updated: <today>` in the YAML frontmatter.
+- Note it in the "pages_updated" list for the manifest and log.
+
+**Rule:** One knowledge unit = one page. Merge, don't proliferate.
+
+---
+
+### 3. Determine wiki structure
+
+Read `superspec/wiki/_meta/taxonomy.md` → build the canonical domain set from the `## Domains` table.
+
+**Domain routing — use this decision tree for every knowledge unit:**
+
+1. **Reusable cross-cutting pattern** (error handling, caching, retry, logging, testing patterns)?  
+   → `patterns/`
+
+2. **Architecture decision** — why X was chosen over Y, with trade-offs documented?  
+   → `decisions/`
+
+3. **Authentication, authorization, sessions, or tokens**?  
+   → `auth/`
+
+4. **API contract, endpoint design, versioning, or request/response shape**?  
+   → `api/`
+
+5. **Data model, schema, or storage decision**?  
+   → `data/`
+
+6. **Infrastructure, deployment, CI/CD, or environment config**?  
+   → `infra/`
+
+7. **Frontend, UI component, routing, or styling pattern**?  
+   → `ui/`
+
+8. **Feature-specific knowledge that fits none of the above**?  
+   → Create a domain named after the feature slug (e.g. `payment-flow/`)  
+   → Add the new domain to `_meta/taxonomy.md` under "Project Domains" before creating the folder
+
+**Rules:**
+- **One domain per page.** If a page spans multiple concerns, split it into separate pages.
+- **Prefer existing domains.** Only create a new domain if nothing in the taxonomy fits.
+- **Feature traceability lives in `spec:` frontmatter**, not in the folder name. A `payment-flow` feature can have pages in `api/`, `data/`, and `patterns/` — all tagged `spec: "[[payment-flow]]"`.
+
+After routing: does the chosen domain folder have a `Home.md`? If not, create a domain index listing its pages.
+
+---
+
+### 4. Write wiki pages
+
+For each new knowledge unit, create `superspec/wiki/<domain>/<topic>.md`:
+
+```markdown
+---
+title: <Page Title>
+summary: <1–2 sentence summary used for fast query previews — what this is and why it matters>
+tags: [<domain>, <feature-slug>, <topic-tags>]
+spec: "[[<slug>]]"
+created: <YYYY-MM-DD>
+updated: <YYYY-MM-DD>
+provenance:
+  sources: [specs/<slug>/spec.md, phases/<slug>-execute/review-log.md]
+  extracted: ~70%
+  inferred: ~25%
+  ambiguous: ~5%
+---
+
+# <Page Title>
+
+## Summary
+1–2 sentences: what this is and why it exists in the project.
+
+## Context
+When and why this was built. What problem it solves.
+
+## Key Decisions
+
+### <Decision Topic>
+**Chose:** <X>
+**Over:** <Y>
+**Because:** <reason>
+**Trade-off:** <what was given up>
+
+## Patterns
+
+### <Pattern Name>
+<Description>
+
+```<lang>
+// Short illustrative example
+<example>
+```
+
+## Gotchas
+
+- **<Problem>:** <how it manifested and what resolved it>
+
+## Interface / Contract (if applicable)
+
+<Key API shape, data model, event format — whatever future code needs to know>
+
+## Open Questions
+
+- [ ] <Unresolved question deferred to future work>
+
+## Related
+- [[<domain>/<page>]] — <what it covers>
+- `<path/to/key/file>` — <what it does>
+```
+
+**Provenance markers in body text:**
+- No marker = extracted directly from source material
+- `^[inferred]` = agent synthesis, not stated verbatim
+- `^[ambiguous]` = sources disagree or claim is uncertain
+
+**Obsidian linking rules:**
+- Internal links: always use `[[page-title]]` or `[[folder/page]]`, never markdown `[text](path.md)`
+- File references: use backtick code spans for source file paths (`src/auth/jwt.ts`)
+- Tags: lowercase, hyphenated (`auth`, `jwt-tokens`, `session-management`)
+- Tags must come from `_meta/taxonomy.md` if it exists; add new tags there if needed
+
+---
+
+### 5. Update the vault home page
+
+Update `superspec/wiki/Home.md`:
+
+```markdown
+---
+title: Wiki Home
+tags: [index, home]
+updated: <YYYY-MM-DD>
+---
+
+# Project Wiki
+
+...
+
+## Domains
+
+| Domain | Pages | Last updated |
+|--------|-------|-------------|
+| [[auth/Home\|auth]] | N | YYYY-MM-DD |
+
+## Recent Updates
+
+_(last 10 — full history in [[log]])_
+
+- <YYYY-MM-DD>: [[<domain>/<page>]] — <brief description>
+```
+
+Each domain folder should also have its own `Home.md` listing its pages.
+
+---
+
+### 6. Cross-link
+
+After writing all pages:
+- Scan existing wiki pages for unlinked mentions of new page topics
+- Add `[[wikilinks]]` where relevant
+- Ensure the new pages link back to related existing pages
+
+Or invoke `/superspecs:cross-linker` to automate this step.
+
+---
+
+### 7. Append to log.md
+
+Append to `superspec/wiki/log.md` (create if missing):
+
+```markdown
+## [<YYYY-MM-DD>] ingest | <slug>: <feature title>
+
+- **Created:** <domain>/<page>.md, <domain>/<page2>.md
+- **Updated:** <domain>/<existing>.md
+- **Domains touched:** <domain1>, <domain2>
+- **Spec:** [[../specs/<slug>/spec.md]]
+```
+
+---
+
+### 8. Update the manifest
+
+Update `superspec/wiki/_manifest.json`:
+
+```json
+{
+  "sources": [
+    {
+      "slug": "<slug>",
+      "ingested_at": "<ISO timestamp>",
+      "pages_created": ["<domain>/<page>"],
+      "pages_updated": ["<domain>/<existing-page>"]
+    }
+  ]
+}
+```
+
+---
+
+### 9. Update spec status
+
+Update `superspec/specs/<slug>/status.md`:
+
+```markdown
+## Wiki Pages
+- [[<domain>/<page>]] — <what it covers>
+
+## Phase
+3.2 — Verify › Wiki Import ✅
+```
+
+---
+
+### 10. Handoff
+
+```
+Wiki import complete: <slug>
+
+Pages created: X
+Pages updated: Y
+
+superspec/wiki/
+├── <domain>/
+│   ├── Home.md      (domain index)
+│   ├── <page1>.md   (new)
+│   └── <page2>.md   (updated)
+├── Home.md          (updated)
+└── log.md           (appended)
+
+Run /cross-linker to auto-weave [[wikilinks]] across the vault.
+Open superspec/wiki/ in Obsidian to browse the vault.
+
+Next: /superspecs:ship <slug>
+```
+
+---
+
+## Output
+
+- New/updated pages in `superspec/wiki/<domain>/`
+- Domain `Home.md` index (create if domain is new)
+- Updated `superspec/wiki/Home.md`
+- Appended `superspec/wiki/log.md`
+- Updated `superspec/wiki/_manifest.json`
+- Updated `superspec/specs/<slug>/status.md`

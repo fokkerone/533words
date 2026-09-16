@@ -1,0 +1,18 @@
+{
+  "sources": [
+    {
+      "change_id": "auth-jwt-initial",
+      "slug": "auth-jwt",
+      "ingested_at": "2026-06-19T00:00:00Z",
+      "pages_created": ["auth/jwt-pattern"],
+      "pages_updated": [],
+      "_note": "Example entry — shows manifest format"
+    },
+    {
+      "slug": "techstack-session",
+      "ingested_at": "2026-09-16T00:00:00Z",
+      "pages_created": ["techstack/profile"],
+      "pages_updated": ["_index"]
+    }
+  ]
+}

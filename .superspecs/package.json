@@ -1,0 +1,52 @@
+{
+  "name": "superspecs",
+  "version": "0.2.7",
+  "description": "Spec-driven AI development: planning + TDD + living wiki memory",
+  "bin": {
+    "superspecs": "bin/superspecs.js"
+  },
+  "scripts": {
+    "install-framework": "bash setup.sh",
+    "prepublishOnly": "node -c bin/superspecs.js && node bin/superspecs.js version"
+  },
+  "files": [
+    "bin/",
+    ".skills/",
+    "setup.sh",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "GEMINI.md",
+    "HOWITWORKS.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ai",
+    "tdd",
+    "spec-driven",
+    "claude-code",
+    "cursor",
+    "opencode",
+    "copilot",
+    "agentic",
+    "wiki",
+    "development-workflow",
+    "ai-agents",
+    "llm",
+    "specification",
+    "workflow"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fokkerone/superspecs.git"
+  },
+  "homepage": "https://superspecs.vercel.app",
+  "bugs": {
+    "url": "https://github.com/fokkerone/superspecs/issues"
+  },
+  "preferGlobal": true
+}
