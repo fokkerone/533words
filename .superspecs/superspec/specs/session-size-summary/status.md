@@ -1,7 +1,7 @@
 # Session Size Selector & Results Summary — Status
 
 ## Phase
-2.2 — Execute › Branch ✅
+2.3–2.5 — Execute ✅ (all waves complete)
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
