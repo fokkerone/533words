@@ -34,3 +34,11 @@ Task 1.1's subagent updates its own test file's `createSessionState`/`startSessi
 ## Human Checkpoints
 - After Wave 1: review session.ts (size param + flagOrder) and session-size-settings.ts and their tests
 - After Wave 2: full verification (lint, build, tests) before `/superspecs:verify`
+
+## Branch
+
+Branch name: `superspec/session-size-summary`
+Type: branch
+Worktree path: N/A
+Created from: main @ dd27aa7
+Created: 2026-09-17
