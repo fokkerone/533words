@@ -18,7 +18,6 @@ Knowledge base distilled from shipped features — architecture decisions, patte
 | [[data/Home\|data]] | 1 | 2026-09-16 |
 | [[ui/Home\|ui]] | 2 | 2026-09-17 |
 | [[patterns/Home\|patterns]] | 3 | 2026-09-17 |
-| [[auth/]] | 1 | 2026-06-19 (example content) |
 
 ## Recent Updates
 
