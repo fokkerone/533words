@@ -5,6 +5,9 @@ import Home from "./page";
 import { useWords, useFlagWord } from "@/hooks/use-words";
 import { clearSession, saveSession } from "@/lib/session-storage";
 import { createSessionState, pickNextWord, type SessionState } from "@/lib/session";
+import { speak, listGermanVoices } from "@/lib/speech";
+import { loadSpeed, saveSpeed } from "@/lib/speech-settings";
+import { loadVoiceURI, saveVoiceURI, clearVoiceURI } from "@/lib/voice-settings";
 
 vi.mock("@/hooks/use-words", () => ({
   useWords: vi.fn(),
@@ -13,10 +16,41 @@ vi.mock("@/hooks/use-words", () => ({
 
 vi.mock("@/lib/speech", () => ({
   speak: vi.fn(),
+  listGermanVoices: vi.fn(),
+}));
+
+vi.mock("@/lib/speech-settings", () => ({
+  loadSpeed: vi.fn(),
+  saveSpeed: vi.fn(),
+}));
+
+vi.mock("@/lib/voice-settings", () => ({
+  loadVoiceURI: vi.fn(),
+  saveVoiceURI: vi.fn(),
+  clearVoiceURI: vi.fn(),
 }));
 
 const mockedUseWords = vi.mocked(useWords);
 const mockedUseFlagWord = vi.mocked(useFlagWord);
+const mockedLoadSpeed = vi.mocked(loadSpeed);
+const mockedSaveSpeed = vi.mocked(saveSpeed);
+const mockedListGermanVoices = vi.mocked(listGermanVoices);
+const mockedLoadVoiceURI = vi.mocked(loadVoiceURI);
+const mockedSaveVoiceURI = vi.mocked(saveVoiceURI);
+const mockedClearVoiceURI = vi.mocked(clearVoiceURI);
+
+function makeVoice(
+  overrides: Partial<SpeechSynthesisVoice> = {},
+): SpeechSynthesisVoice {
+  return {
+    lang: "de-DE",
+    name: "German",
+    voiceURI: "de-DE-voice",
+    default: false,
+    localService: true,
+    ...overrides,
+  } as SpeechSynthesisVoice;
+}
 
 function makeWords(count: number) {
   return Array.from({ length: count }, (_, i) => ({
@@ -57,6 +91,13 @@ describe("Home practice screen", () => {
       error: null,
       isSuccess: false,
     } as unknown as ReturnType<typeof useFlagWord>);
+    mockedLoadSpeed.mockReturnValue(1.0);
+    mockedSaveSpeed.mockReset();
+    mockedListGermanVoices.mockReturnValue([]);
+    mockedLoadVoiceURI.mockReturnValue(null);
+    mockedSaveVoiceURI.mockReset();
+    mockedClearVoiceURI.mockReset();
+    vi.mocked(speak).mockReset();
   });
 
   it("shows the word text after Next Word then reveal", async () => {
@@ -217,5 +258,252 @@ describe("Home practice screen", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
     expect(await screen.findByText(currentWordText)).toBeInTheDocument();
+  });
+
+  it("initializes the speed slider from the persisted speed, not the 1.0 default", async () => {
+    mockedLoadSpeed.mockReturnValue(0.75);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const slider = await screen.findByRole("slider");
+    await waitFor(() => {
+      expect(slider).toHaveAttribute("aria-valuenow", "0.75");
+    });
+  });
+
+  it("persists and applies a new speed when the slider is changed", async () => {
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const slider = await screen.findByRole("slider");
+    fireEvent.keyDown(slider, { key: "ArrowRight" });
+
+    await waitFor(() => {
+      expect(mockedSaveSpeed).toHaveBeenCalled();
+    });
+    const newRate = mockedSaveSpeed.mock.calls[0][0];
+    expect(newRate).not.toBe(1.0);
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), newRate, null);
+    });
+
+    vi.mocked(speak).mockClear();
+
+    fireEvent.click(await screen.findByRole("button", { name: /^play$/i }));
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), newRate, null);
+    });
+  });
+
+  it("Play button speaks the current word at the current rate before reveal", async () => {
+    mockedLoadSpeed.mockReturnValue(0.8);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+    vi.mocked(speak).mockClear();
+
+    const playButton = screen.getByRole("button", { name: /^play$/i });
+    expect(playButton).not.toBeDisabled();
+    fireEvent.click(playButton);
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 0.8, null);
+    });
+  });
+
+  it("allows the Play control to be activated repeatedly before reveal, without error", async () => {
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+    const playButton = screen.getByRole("button", { name: /^play$/i });
+    vi.mocked(speak).mockClear();
+
+    expect(() => {
+      fireEvent.click(playButton);
+      fireEvent.click(playButton);
+      fireEvent.click(playButton);
+    }).not.toThrow();
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledTimes(3);
+    });
+    // Still not revealed, so the control remains available for further replays.
+    expect(playButton).not.toBeDisabled();
+  });
+
+  it("disables the Play button once the current word has been revealed", async () => {
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+    const playButton = await screen.findByRole("button", { name: /^play$/i });
+    expect(playButton).not.toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^play$/i })).toBeDisabled();
+    });
+
+    vi.mocked(speak).mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /^play$/i }));
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it("disables the Play button when there is no current word", async () => {
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /next word/i })).toBeInTheDocument();
+    });
+
+    const playButton = screen.getByRole("button", { name: /^play$/i });
+    expect(playButton).toBeDisabled();
+  });
+
+  it("uses the current persisted rate for automatic playback on Next Word", async () => {
+    mockedLoadSpeed.mockReturnValue(1.4);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.4, null);
+    });
+  });
+
+  it("lists an 'Automatic' option plus every available German voice in the dropdown", async () => {
+    const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+    const voiceB = makeVoice({ name: "Petra", voiceURI: "petra-uri" });
+    mockedListGermanVoices.mockReturnValue([voiceA, voiceB]);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const combobox = await screen.findByRole("combobox", { name: /stimme|voice/i });
+    fireEvent.click(combobox);
+
+    expect(await screen.findByRole("option", { name: /automat/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Anna" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Petra" })).toBeInTheDocument();
+  });
+
+  it("initializes the voice dropdown from a persisted voiceURI", async () => {
+    const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+    mockedListGermanVoices.mockReturnValue([voiceA]);
+    mockedLoadVoiceURI.mockReturnValue("anna-uri");
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    expect(await screen.findByText("Anna")).toBeInTheDocument();
+  });
+
+  it("selecting a voice persists it and uses it for subsequent playback", async () => {
+    const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+    mockedListGermanVoices.mockReturnValue([voiceA]);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const combobox = await screen.findByRole("combobox", { name: /stimme|voice/i });
+    fireEvent.click(combobox);
+    fireEvent.click(await screen.findByRole("option", { name: "Anna" }));
+
+    await waitFor(() => {
+      expect(mockedSaveVoiceURI).toHaveBeenCalledWith("anna-uri");
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, "anna-uri");
+    });
+  });
+
+  it("returning to 'Automatic' clears the persisted voice and uses automatic selection again", async () => {
+    const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+    mockedListGermanVoices.mockReturnValue([voiceA]);
+    mockedLoadVoiceURI.mockReturnValue("anna-uri");
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const combobox = await screen.findByRole("combobox", { name: /stimme|voice/i });
+    fireEvent.click(combobox);
+    fireEvent.click(await screen.findByRole("option", { name: /automat/i }));
+
+    await waitFor(() => {
+      expect(mockedClearVoiceURI).toHaveBeenCalled();
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, null);
+    });
+  });
+
+  it("updates the dropdown when the voice list finishes loading asynchronously", async () => {
+    // jsdom has no real speechSynthesis; use a minimal EventTarget-based
+    // fake so the component's voiceschanged listener has something real to
+    // attach to and this test can dispatch the event genuinely.
+    class FakeSpeechSynthesis extends EventTarget {}
+    const fakeSynth = new FakeSpeechSynthesis();
+    const original = (window as unknown as { speechSynthesis?: unknown })
+      .speechSynthesis;
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      fakeSynth;
+
+    try {
+      mockedListGermanVoices.mockReturnValue([]);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      expect(screen.queryByText("Anna")).not.toBeInTheDocument();
+
+      const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+      mockedListGermanVoices.mockReturnValue([voiceA]);
+      // Simulate the browser's voiceschanged event firing once the list loads.
+      fakeSynth.dispatchEvent(new Event("voiceschanged"));
+
+      const combobox = await screen.findByRole("combobox", {
+        name: /stimme|voice/i,
+      });
+      fireEvent.click(combobox);
+      expect(
+        await screen.findByRole("option", { name: "Anna" })
+      ).toBeInTheDocument();
+    } finally {
+      (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+        original;
+    }
+  });
+
+  it("picks up voices already loaded by the time the mount effect runs, even if voiceschanged never fires again", async () => {
+    // Reproduces a real race observed in Chrome: the voice list finishes
+    // loading (and voiceschanged fires) before the component's effect has
+    // attached its listener, so the event is never seen. The first
+    // listGermanVoices() call (the lazy useState initializer, evaluated
+    // synchronously at first render) returns empty; every call after that
+    // returns the now-loaded list, simulating voices becoming available
+    // between the initial render and the effect running - with no event to
+    // rely on.
+    const voiceA = makeVoice({ name: "Anna", voiceURI: "anna-uri" });
+    mockedListGermanVoices.mockReturnValueOnce([]).mockReturnValue([voiceA]);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const combobox = await screen.findByRole("combobox", {
+      name: /stimme|voice/i,
+    });
+    fireEvent.click(combobox);
+    expect(
+      await screen.findByRole("option", { name: "Anna" })
+    ).toBeInTheDocument();
   });
 });
