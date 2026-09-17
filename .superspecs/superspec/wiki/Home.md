@@ -16,7 +16,7 @@ Knowledge base distilled from shipped features — architecture decisions, patte
 |--------|-------|-------------|
 | [[techstack/profile\|techstack]] | 1 | 2026-09-17 |
 | [[data/Home\|data]] | 1 | 2026-09-16 |
-| [[ui/Home\|ui]] | 1 | 2026-09-16 |
+| [[ui/Home\|ui]] | 1 | 2026-09-17 |
 | [[patterns/Home\|patterns]] | 3 | 2026-09-17 |
 | [[auth/]] | 1 | 2026-06-19 (example content) |
 
@@ -24,6 +24,8 @@ Knowledge base distilled from shipped features — architecture decisions, patte
 
 _(last 10 — full history in [[log]])_
 
+- 2026-09-17: [[ui/session-state-pattern]] — updated: configurable session size, flag-order tracking, results-summary lookup pattern (session-size-summary)
+- 2026-09-17: [[techstack/profile]] — updated: session-size-summary shipped
 - 2026-09-17: [[patterns/web-speech-voice-selection]] — new: German voice selection, overlap prevention, and a real async-loading race found via manual browser testing
 - 2026-09-17: [[patterns/jsdom-radix-polyfills]] — new: browser API polyfills needed for shadcn/Radix components under jsdom
 - 2026-09-17: [[techstack/profile]] — updated: speech-controls shipped, dev-server LAN access gotcha documented

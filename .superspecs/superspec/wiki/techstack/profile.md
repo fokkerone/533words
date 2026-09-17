@@ -2,7 +2,7 @@ title: Tech Stack Profile
 tags: [techstack, setup, infrastructure]
 created: 2026-09-16
 updated: 2026-09-17
-sources: [techstack-session, flashcard-session, speech-controls]
+sources: [techstack-session, flashcard-session, speech-controls, session-size-summary]
 
 # Tech Stack Profile
 
@@ -144,5 +144,6 @@ _Note: automated installation of these third-party skills was blocked by the ses
 3. Install the community skills above (copy-paste install commands) if desired — still outstanding.
 4. ~~Run `/superspecs:discuss` to plan the session flow feature~~ — done; see [[ui/session-state-pattern]] and [[patterns/fake-db-client-testing]] for what was built.
 5. ~~Speech controls (German voice, Play button, speed, manual voice selection)~~ — done; see [[patterns/web-speech-voice-selection]].
-6. Reference this profile in every spec for consistency.
-7. Next feature candidates: a "review hardest words" / spaced-repetition mode (explicitly deferred in `superspec/specs/flashcard-session/spec.md`'s Out of Scope, but the score data it needs already exists).
+6. ~~Session size selector + results summary~~ — done; see [[ui/session-state-pattern]]'s updated sections.
+7. Reference this profile in every spec for consistency.
+8. Next feature candidates: a "review hardest words" / spaced-repetition mode (explicitly deferred in `superspec/specs/flashcard-session/spec.md`'s Out of Scope, but the score data it needs already exists — now made more directly actionable by session-size-summary's results view, which shows exactly which words were wrong).
