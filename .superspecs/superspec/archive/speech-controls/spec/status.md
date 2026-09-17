@@ -1,7 +1,13 @@
 # Speech Controls (German Voice, Play Button, Speed) — Status
 
 ## Phase
-3 — Verify ✅
+4 — Shipped ✅
+
+## Completed
+2026-09-17
+
+## PR
+No GitHub remote configured for this repo — merged directly into `main` locally (merge commit, `--no-ff`) instead of via a PR.
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -16,8 +22,8 @@
 - [x] Code review passed (no Critical findings; 1 Medium finding fixed — vestigial voiceschanged listener)
 - [x] Manual end-to-end verification complete (real browser — also where a real async voice-loading race was found and fixed)
 - [x] Wiki imported
-- [ ] PR created
-- [ ] Archived
+- [x] PR created (N/A — local merge, see above)
+- [x] Archived
 
 ## Test Results
 - Suite: 77 passing, 0 failing, 0 skipped
