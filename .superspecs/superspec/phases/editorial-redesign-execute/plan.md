@@ -35,3 +35,11 @@ Task 2.1's subagent must view `ideas/idee1.webp` directly (not rely on a text de
 ## Human Checkpoints
 - After Wave 1: review the new light/dark tokens (via devtools toggle) and `theme-settings.ts` tests
 - After Wave 2: full verification (lint, build, tests, manual browser comparison against the reference image at mobile/tablet/desktop widths) before `/superspecs:verify`
+
+## Branch
+
+Branch name: `superspec/editorial-redesign`
+Type: branch
+Worktree path: N/A
+Created from: main @ 6c9868b
+Created: 2026-09-17
