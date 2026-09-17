@@ -316,6 +316,27 @@ describe("Home practice screen", () => {
     });
   });
 
+  it("allows the Play control to be activated repeatedly before reveal, without error", async () => {
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+    const playButton = screen.getByRole("button", { name: /^play$/i });
+    vi.mocked(speak).mockClear();
+
+    expect(() => {
+      fireEvent.click(playButton);
+      fireEvent.click(playButton);
+      fireEvent.click(playButton);
+    }).not.toThrow();
+
+    await waitFor(() => {
+      expect(speak).toHaveBeenCalledTimes(3);
+    });
+    // Still not revealed, so the control remains available for further replays.
+    expect(playButton).not.toBeDisabled();
+  });
+
   it("disables the Play button once the current word has been revealed", async () => {
     setupUseWords(makeWords(2));
     renderHome();
