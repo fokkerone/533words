@@ -40,4 +40,64 @@ export async function initSchema(client: DbClient): Promise<void> {
       score INTEGER NOT NULL DEFAULT 0
     )`,
   });
+
+  // Per-learner score, replacing the single global `words.score` column
+  // (see `dropWordsScoreColumn` below). Composite-keyed on (user_id,
+  // word_id) so each learner has at most one score row per word; a
+  // learner/word pair with no row is implicitly score 0.
+  //
+  // `user_id` references Better Auth's `user` table (`user.id`, confirmed
+  // `TEXT NOT NULL PRIMARY KEY`), but that table is created separately by
+  // `npx @better-auth/cli migrate` (see `src/lib/auth.ts`), not by this
+  // function -- so this FK may be declared before the `user` table exists.
+  // That's fine: SQLite/libSQL does not validate FK targets at CREATE
+  // TABLE time (only -- optionally -- at DML time, gated behind `PRAGMA
+  // foreign_keys`, which this app does not enable), so this statement
+  // succeeds regardless of whether `initSchema` or the Better Auth
+  // migration has run first.
+  await client.execute({
+    sql: `CREATE TABLE IF NOT EXISTS user_word_scores (
+      user_id TEXT NOT NULL,
+      word_id TEXT NOT NULL,
+      score INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, word_id),
+      FOREIGN KEY (word_id) REFERENCES words(id),
+      FOREIGN KEY (user_id) REFERENCES user(id)
+    )`,
+  });
+}
+
+/**
+ * One-time destructive migration: drops the now-meaningless global
+ * `words.score` column now that scoring is per-learner
+ * (`user_word_scores`). Safe to re-run -- checks `PRAGMA table_info(words)`
+ * first and no-ops if the column is already gone, rather than erroring on
+ * a second run.
+ *
+ * Primary approach is `ALTER TABLE ... DROP COLUMN`, which modern
+ * SQLite/libSQL (3.35+, which Turso runs) supports. If that ever fails
+ * against a libSQL build without DROP COLUMN support, this falls back to
+ * clearing the column to 0 -- which also satisfies the spec's "no
+ * learner's score reflects the old global value" requirement, just without
+ * removing the now-unused column.
+ */
+export async function dropWordsScoreColumn(client: DbClient): Promise<void> {
+  const info = (await client.execute({
+    sql: `PRAGMA table_info(words)`,
+  })) as { rows: Array<{ name: string }> };
+
+  const hasScoreColumn = info.rows.some((row) => row.name === "score");
+  if (!hasScoreColumn) {
+    return;
+  }
+
+  try {
+    await client.execute({
+      sql: `ALTER TABLE words DROP COLUMN score`,
+    });
+  } catch {
+    await client.execute({
+      sql: `UPDATE words SET score = 0`,
+    });
+  }
 }
