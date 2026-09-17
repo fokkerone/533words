@@ -46,3 +46,12 @@ Append-only activity log. Every ingest, query, and lint run appends an entry her
 - Spec: `superspec/specs/session-size-summary/spec.md`
 - Test suite: 100/100 passing, 11/11 spec scenarios covered, no regressions
 
+## [2026-09-17] ingest | editorial-redesign: fullscreen editorial visual redesign + dark/light theme + auto-advance
+
+- Created: ui/design-tokens-theming.md
+- Updated: ui/session-state-pattern.md (`advance()` auto-advance consumer pattern), ui/Home.md, techstack/profile.md (Inter font, Exaggerated Minimalism style, Tailwind v4 breakpoints, shipped)
+- Domains touched: ui, techstack
+- Spec: `superspec/specs/editorial-redesign/spec.md`
+- Test suite: 113/113 passing, 11/15 spec scenarios covered by automated tests, 4/15 explicitly manually-verified per the spec's own Non-Functional Requirements carve-out (fluid-layout tiers, typeface config, design-token config — visual/config-only, not meaningfully unit-testable), no regressions
+- Notable: found and fixed a latent bug while integrating Inter (a `--font-geist-sans`/`--font-sans` CSS variable naming mismatch meant the original Geist font was likely never actually applied); the browser-automation viewport-resize tool doesn't work in this sandboxed environment, compensated for by inspecting the compiled stylesheet directly to confirm the breakpoint media queries are correct
+

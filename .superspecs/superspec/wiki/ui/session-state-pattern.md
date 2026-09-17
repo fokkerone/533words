@@ -1,11 +1,11 @@
 title: Immutable Session State Pattern
-summary: How flashcard-session models a multi-step practice flow (pick → speak → reveal → flag) as pure, immutable state transitions, kept separate from React and from the DB. Extended by session-size-summary with a configurable session size and flag-order tracking.
-tags: [ui, flashcard-session, session-size-summary, state-management, react]
+summary: How flashcard-session models a multi-step practice flow (pick → speak → reveal → flag) as pure, immutable state transitions, kept separate from React and from the DB. Extended by session-size-summary with a configurable session size and flag-order tracking, and by editorial-redesign with an auto-advance consumer pattern.
+tags: [ui, flashcard-session, session-size-summary, editorial-redesign, state-management, react]
 spec: "[[flashcard-session]]"
 created: 2026-09-16
 updated: 2026-09-17
 provenance:
-  sources: [specs/flashcard-session/spec.md, specs/flashcard-session/GRILL.md, phases/flashcard-session-execute/review-log.md, specs/session-size-summary/spec.md, specs/session-size-summary/GRILL.md, phases/session-size-summary-execute/review-log.md]
+  sources: [specs/flashcard-session/spec.md, specs/flashcard-session/GRILL.md, phases/flashcard-session-execute/review-log.md, specs/session-size-summary/spec.md, specs/session-size-summary/GRILL.md, phases/session-size-summary-execute/review-log.md, specs/editorial-redesign/spec.md, phases/editorial-redesign-execute/review-log.md]
   extracted: 65%
   inferred: 30%
   ambiguous: 5%
@@ -82,6 +82,12 @@ The results-summary table (session-size-summary) needs each flagged word's *text
 ### Defensive no-ops instead of thrown errors
 `flagWord` silently returns the input state unchanged if the target isn't the current word, or was already flagged, rather than throwing. This matches the spec's "SHALL NOT change score" wording (a behavioral requirement, not an error case) and keeps the UI layer simple — no try/catch needed around state transitions, only around the async DB call.
 
+### `advance()` — flagging and picking-the-next-word unified into one consumer-level helper
+**Chose:** `page.tsx` has a small local helper, `advance(state): SessionState`, that wraps `pickNextWord(state)` + `speak(next.current.text, rate, selectedVoiceURI)` and returns the updated state. `handleFlag` calls it after a successful DB write + `flagWord`, but only when `!isSessionComplete(next)`. The same helper is also called once at session start (both the auto-start effect and `startNewSession`), since removing the standalone "Next Word" button (editorial-redesign) meant nothing else would ever populate the very first word of a session.
+**Over:** Keeping pick-and-speak logic only behind a dedicated "Next Word" button handler (the pre-editorial-redesign shape), or duplicating the pick+speak call at both the flag site and the session-start site.
+**Because:** editorial-redesign's spec required flagging a word to "both record that flag and select/present the next word in the same action — without requiring a separate 'next word' action," and explicitly forbids a standalone next-word control. `advance()` is `session.ts`'s pure `pickNextWord` plus the speech side-effect, still kept at the `page.tsx` consumer layer (not pushed into `session.ts`, which stays framework/side-effect-free per the original design decision above).
+**Trade-off:** none significant — this is a straightforward consequence of the "no separate next-word control" requirement, confirmed as a reasonable, necessary scope resolution during code review (not scope creep) since without it a session could never advance past `current: null` at start.
+
 ## Gotchas
 
 - **Two `flagWord` functions, same name, different jobs:** `session.ts`'s `flagWord(state, wordId, correct): SessionState` (pure, in-memory) collided in name with `words.ts`'s original DB-writing function. Caught in code review after both were built in parallel by separate subagents; the DB-writing one was renamed to `writeWordFlag` rather than aliasing imports in the UI layer. Worth remembering if adding more session-adjacent modules: `flagWord`/`flag*` is an easy name to collide on.
@@ -91,4 +97,5 @@ The results-summary table (session-size-summary) needs each flagged word's *text
 - [[data/word-bank-schema]] — where the `Word`/score data this state operates on comes from
 - [[patterns/fake-db-client-testing]] — how the DB-touching half of the flow (`writeWordFlag`) is tested
 - [[patterns/web-speech-voice-selection]] — the sibling required-vs-optional parameter reasoning `sessionSize` follows
+- [[ui/design-tokens-theming]] — the visual redesign and theme-toggle work shipped alongside the `advance()` auto-advance pattern
 - `src/lib/session.ts`, `src/lib/session-storage.ts`, `src/lib/session-size-settings.ts`, `src/app/page.tsx` — implementation
