@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Home from "./page";
 import { useWords, useFlagWord } from "@/hooks/use-words";
@@ -8,6 +8,7 @@ import { createSessionState, pickNextWord, type SessionState } from "@/lib/sessi
 import { speak, listGermanVoices } from "@/lib/speech";
 import { loadSpeed, saveSpeed } from "@/lib/speech-settings";
 import { loadVoiceURI, saveVoiceURI, clearVoiceURI } from "@/lib/voice-settings";
+import { loadSessionSize, saveSessionSize } from "@/lib/session-size-settings";
 
 vi.mock("@/hooks/use-words", () => ({
   useWords: vi.fn(),
@@ -30,6 +31,11 @@ vi.mock("@/lib/voice-settings", () => ({
   clearVoiceURI: vi.fn(),
 }));
 
+vi.mock("@/lib/session-size-settings", () => ({
+  loadSessionSize: vi.fn(),
+  saveSessionSize: vi.fn(),
+}));
+
 const mockedUseWords = vi.mocked(useWords);
 const mockedUseFlagWord = vi.mocked(useFlagWord);
 const mockedLoadSpeed = vi.mocked(loadSpeed);
@@ -38,6 +44,8 @@ const mockedListGermanVoices = vi.mocked(listGermanVoices);
 const mockedLoadVoiceURI = vi.mocked(loadVoiceURI);
 const mockedSaveVoiceURI = vi.mocked(saveVoiceURI);
 const mockedClearVoiceURI = vi.mocked(clearVoiceURI);
+const mockedLoadSessionSize = vi.mocked(loadSessionSize);
+const mockedSaveSessionSize = vi.mocked(saveSessionSize);
 
 function makeVoice(
   overrides: Partial<SpeechSynthesisVoice> = {},
@@ -98,6 +106,8 @@ describe("Home practice screen", () => {
     mockedSaveVoiceURI.mockReset();
     mockedClearVoiceURI.mockReset();
     vi.mocked(speak).mockReset();
+    mockedLoadSessionSize.mockReturnValue(24);
+    mockedSaveSessionSize.mockReset();
   });
 
   it("shows the word text after Next Word then reveal", async () => {
@@ -243,7 +253,7 @@ describe("Home practice screen", () => {
 
   it("restores an in-progress session (current word and pool) after a reload", async () => {
     const words = makeWords(5);
-    let state: SessionState = createSessionState(words);
+    let state: SessionState = createSessionState(words, 24);
     state = pickNextWord(state);
     saveSession<SessionState>(state);
     const currentWordText = state.current!.text;
@@ -505,5 +515,119 @@ describe("Home practice screen", () => {
     expect(
       await screen.findByRole("option", { name: "Anna" })
     ).toBeInTheDocument();
+  });
+
+  it("shows the default session size (24) when nothing is persisted", async () => {
+    mockedLoadSessionSize.mockReturnValue(24);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    expect(await screen.findByText("24")).toBeInTheDocument();
+  });
+
+  it("shows a persisted non-default session size on mount", async () => {
+    mockedLoadSessionSize.mockReturnValue(8);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    expect(await screen.findByText("8")).toBeInTheDocument();
+  });
+
+  it("selecting a session size discards an in-progress session and starts fresh", async () => {
+    mockedLoadSessionSize.mockReturnValue(24);
+    setupUseWords(makeWords(5));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /reveal/i }));
+
+    expect(screen.getByRole("button", { name: /next word/i })).toBeDisabled();
+
+    const sizeCombobox = await screen.findByRole("combobox", {
+      name: /session size/i,
+    });
+    fireEvent.click(sizeCombobox);
+    fireEvent.click(await screen.findByRole("option", { name: "8" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /next word/i })).not.toBeDisabled();
+    });
+    expect(screen.getByText(/press "next word" to begin/i)).toBeInTheDocument();
+  });
+
+  it("persists the newly selected session size", async () => {
+    mockedLoadSessionSize.mockReturnValue(24);
+    setupUseWords(makeWords(5));
+    renderHome();
+
+    const sizeCombobox = await screen.findByRole("combobox", {
+      name: /session size/i,
+    });
+    fireEvent.click(sizeCombobox);
+    fireEvent.click(await screen.findByRole("option", { name: "16" }));
+
+    await waitFor(() => {
+      expect(mockedSaveSessionSize).toHaveBeenCalledWith(16);
+    });
+  });
+
+  it("shows a results summary in flagged order after completing a session", async () => {
+    mockedLoadSessionSize.mockReturnValue(8);
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /reveal/i }));
+    const firstWordText = (
+      await screen.findByText(/^word\d$/)
+    ).textContent;
+    fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+
+    await waitFor(() => {
+      expect(mutateAsync).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /reveal/i }));
+    const secondWordText = (
+      await screen.findByText(/^word\d$/)
+    ).textContent;
+    fireEvent.click(await screen.findByRole("button", { name: /^incorrect$/i }));
+
+    await waitFor(() => {
+      expect(mutateAsync).toHaveBeenCalledTimes(2);
+    });
+
+    expect(await screen.findByText(/session complete/i)).toBeInTheDocument();
+
+    const table = screen.getByRole("table");
+    const rows = within(table).getAllByRole("row");
+    // rows[0] is header
+    expect(within(rows[1]).getByText(firstWordText!)).toBeInTheDocument();
+    expect(within(rows[1]).getByText(/correct/i)).toBeInTheDocument();
+    expect(within(rows[2]).getByText(secondWordText!)).toBeInTheDocument();
+    expect(within(rows[2]).getByText(/incorrect/i)).toBeInTheDocument();
+  });
+
+  it("removes the previous results summary when a new session is started", async () => {
+    mockedLoadSessionSize.mockReturnValue(8);
+    setupUseWords(makeWords(1));
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: /next word/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /reveal/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+
+    await waitFor(() => {
+      expect(mutateAsync).toHaveBeenCalledTimes(1);
+    });
+
+    expect(await screen.findByRole("table")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /new session/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    });
   });
 });

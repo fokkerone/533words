@@ -16,6 +16,7 @@ import { useFlagWord, useWords } from "@/hooks/use-words";
 import { listGermanVoices, speak } from "@/lib/speech";
 import { loadSpeed, saveSpeed } from "@/lib/speech-settings";
 import { loadVoiceURI, saveVoiceURI, clearVoiceURI } from "@/lib/voice-settings";
+import { loadSessionSize, saveSessionSize } from "@/lib/session-size-settings";
 import { loadSession, saveSession } from "@/lib/session-storage";
 import {
   createSessionState,
@@ -50,6 +51,7 @@ export default function Home() {
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(
     loadVoiceURI,
   );
+  const [sessionSize, setSessionSize] = useState<number>(loadSessionSize);
   const autoStarted = useRef(false);
 
   // Chrome (among others) loads the voice list asynchronously; re-read it
@@ -91,19 +93,26 @@ export default function Home() {
     if (session) return;
     if (!words || words.length === 0) return;
     autoStarted.current = true;
-    const fresh = createSessionState(words);
+    const fresh = createSessionState(words, sessionSize);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time auto-start reacting to the word bank finishing its initial async fetch; guarded by autoStarted so it can't cascade.
     setSession(fresh);
     saveSession<SessionState>(fresh);
-  }, [session, words]);
+  }, [session, words, sessionSize]);
 
-  function startNewSession() {
+  function startNewSession(size: number) {
     if (!words || words.length === 0) return;
-    const fresh = createSessionState(words);
+    const fresh = createSessionState(words, size);
     setSession(fresh);
     setRevealed(false);
     setFlagError(null);
     saveSession<SessionState>(fresh);
+  }
+
+  function handleSessionSizeChange(value: string) {
+    const size = Number(value);
+    setSessionSize(size);
+    saveSessionSize(size);
+    startNewSession(size);
   }
 
   function handleNextWord() {
@@ -270,10 +279,51 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          <div className="flex w-full items-center gap-2">
+            <span className="text-sm text-muted-foreground">Session size</span>
+            <Select
+              value={String(sessionSize)}
+              onValueChange={handleSessionSizeChange}
+            >
+              <SelectTrigger aria-label="Session size" className="flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[8, 16, 24, 32, 64].map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {complete && session && (
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr>
+                  <th className="pr-2 font-medium text-muted-foreground">Word</th>
+                  <th className="font-medium text-muted-foreground">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {session.flagOrder.map((id) => {
+                  const word = words?.find((w) => w.id === id);
+                  return (
+                    <tr key={id}>
+                      <td className="pr-2">{word?.text ?? id}</td>
+                      <td>{session.flagged[id]}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
           {complete ? (
-            <Button onClick={startNewSession} className="w-full">
+            <Button onClick={() => startNewSession(sessionSize)} className="w-full">
               New Session
             </Button>
           ) : (
@@ -315,7 +365,11 @@ export default function Home() {
                   👎 Incorrect
                 </Button>
               </div>
-              <Button onClick={startNewSession} variant="ghost" className="w-full">
+              <Button
+                onClick={() => startNewSession(sessionSize)}
+                variant="ghost"
+                className="w-full"
+              >
                 New Session
               </Button>
             </>
