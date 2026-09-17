@@ -31,13 +31,39 @@ Populated during execution — one entry per task review.
 ## Wave 2
 
 ### Task 2.1: Login and register pages
-_Pending_
+**Stage 1 — Spec compliance:** PASS. Both scenarios verified for registration (success redirects to `/`, already-used email shows a specific error without redirecting) and login (success redirects, incorrect credentials show a generic error). The non-enumeration requirement is satisfied structurally exactly as GRILL.md Q4 intended: `GENERIC_LOGIN_ERROR` is a hardcoded constant, never Better Auth's `error.message`/`error.code` — verified by a test that feeds a fake error containing an internal-detail string and asserts it never renders. Google sign-in uses a single `signIn.social({ provider: "google" })` action for both first-time and returning users, matching the spec's "single action" requirement.
+
+**Diligence on the Better Auth API surface:** rather than guessing method signatures, the subagent ran `createAuthClient()` directly in Node to confirm the real shape, and found — via a real `npm run build` typecheck failure, not by assumption — that Better Auth's `signUp.email` schema requires a `name` field this app has no UI for; resolved by defaulting `name` to the email address, documented inline as a deliberate fallback (out of scope: dedicated display-name field). This is exactly the kind of live-verification discipline GRILL.md Q2 asked for, applied here even though Q2 was written about Task 1.1 specifically.
+
+**Stage 2 — Code quality:** PASS. Good separation: `AuthForm` owns only field state/visual shell, page components own the Better Auth call + error-code interpretation — appropriately not over-extracted (the task's own guidance was "only extract if there's genuine duplication," followed correctly). Register's error handling distinguishes the one recognized safe code (`USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`) from everything else, which falls back to a generic message rather than ever risking a raw error leak. Test mocking follows this project's established `page.test.tsx` convention. 8 new tests, each testing a distinct behavior (not padding).
+
+**Low, non-blocking nit:** `AuthForm`'s password field is shared between login and register with `autoComplete="current-password"` — technically correct for login, but browser password managers generally handle registration flows better with `autoComplete="new-password"` (offers to generate/save a new password rather than autofill an old one). Cosmetic UX polish, not a spec violation; not worth a fix-up cycle for this pass.
+
+**Verdict:** ✅ Approved, no Critical findings.
 
 ### Task 2.2: Route protection for the practice screen
-_Pending_
+**Stage 1 — Spec compliance:** PASS. Independently re-verified the core scenario myself: started the real dev server and confirmed `curl http://localhost:3000/` unauthenticated returns `307` to `/login`, while `/login` and `/register` both return `200` without a session. This satisfies "Unauthenticated visit redirects to login" and "no redirect loop" directly, not just on the subagent's word.
+
+**Genuine, well-substantiated deviation from the task's literal instruction:** the task said `src/middleware.ts`, but the subagent found this produces a real Next.js 16 build-time deprecation warning and correctly followed `AGENTS.md`'s explicit instruction to consult `node_modules/next/dist/docs/` and heed deprecation notices. I independently confirmed the deprecation is real by reading `node_modules/next/dist/docs/.../proxy.md` myself — it explicitly states "The `middleware` file convention is deprecated and has been renamed to `proxy`." Correct call, correctly justified, not an unauthorized scope change.
+
+**Testability approach matches GRILL.md Q1 exactly:** `shouldRedirectToLogin` extracted as a pure function, unit-tested directly (3 tests: absent/null/present cookie); `proxy.ts` itself stays a thin wrapper, appropriately left to manual/curl verification since it isn't meaningfully unit-testable under jsdom. `getSessionCookie`'s signature was verified against the installed package's `.d.mts` file rather than assumed.
+
+**Stage 2 — Code quality:** PASS. Matcher correctly excludes `/login`, `/register`, `/api/auth/*`, Next.js internals, and static assets — verified by the redirect-loop-free `curl` checks above. Doc comments in both `proxy.ts` and `route-guard.ts` clearly explain the optimistic-cookie-vs-DB-backed-check distinction, correctly pointing at `auth-server.ts`'s `getServerSession()` as the place for a real DB-backed check if one is ever needed.
+
+**Low, non-blocking nits:** (1) `route-guard.ts`'s doc comment still says "`src/middleware.ts`" in two places — a stale reference from before the proxy.ts rename; (2) one test is labeled "redirects when the session cookie is an empty string" but actually passes `null`, not `""` — a minor test-description/input mismatch, not a real gap since `null` is the documented `getSessionCookie` return value for "no cookie" anyway. Neither affects correctness; not worth a fix-up cycle.
+
+**Verdict:** ✅ Approved, no Critical findings. Independently re-verified the redirect/no-redirect-loop behavior myself via a live `curl` check against the actual dev server, not just accepting the subagent's report.
 
 ### Task 2.3: Per-learner score data layer
-_Pending_
+**Stage 1 — Spec compliance:** PASS. `fetchWords`'s `LEFT JOIN ... COALESCE(user_word_scores.score, 0)` correctly implements the "implicit 0 for an unflagged word" requirement without erroring on a missing row. `writeWordFlag`'s `INSERT ... ON CONFLICT (user_id, word_id) DO UPDATE` correctly satisfies "row created on first flag, updated (not duplicated) on subsequent flags" in a single atomic statement — a cleaner solution than the task's suggested "check if row exists, branch" approach, and still fully consistent with the existing "read current score, compute, write" pattern. `userId` made a required parameter on all four touched functions (`fetchWords`, `writeWordFlag`, `useWords`, `useFlagWord`) — correctly reasoned: the spec's Error Behavior clause leaves no valid "unscoped" call, and making it required surfaces the gap at compile time rather than accepting a silent placeholder.
+
+**Query-key scoping (Word/Score Data Fetching Is Scoped Per Learner) done here, ahead of Wave 3:** `useWords`/`useFlagWord` already fold `userId` into `WORDS_QUERY_KEY` (`[...WORDS_QUERY_KEY, userId]`), which is technically listed as Wave 3's job in tasks.md but is a natural, low-risk consequence of making `userId` a required hook parameter — not scope creep, just finishing the same change coherently in one place instead of leaving the hooks half-scoped.
+
+**Expected temporary build failure — correctly anticipated and reported, not glossed over:** independently reproduced myself — `npm run build` fails with exactly `src/app/page.tsx(43,54): error TS2554: Expected 1 arguments, but got 0` and the same at line 44, because `page.tsx` still calls `useWords()`/`useFlagWord()` with no arguments. This is precisely the documented, deliberate consequence of Wave 2's three tasks running in parallel against disjoint files — Wave 3 (Task 3.1) is what wires the real session into these call sites. Not a defect in this task.
+
+**Stage 2 — Code quality:** PASS. Test coverage is excellent and matches the task's four required scenarios exactly, plus two extra edge cases carried over from the original `words.test.ts` (write failure propagation, missing-word error) — nothing dropped in the rewrite. The fake DB client correctly models the two-table join shape (`words` + `user_word_scores`) rather than a simplified stand-in, keeping the test meaningfully close to the real query shape.
+
+**Verdict:** ✅ Approved, no Critical findings. `npm run build`'s failure is expected and will resolve once Task 3.1 (Wave 3) wires `page.tsx` to the real session.
 
 ## Wave 3
 
