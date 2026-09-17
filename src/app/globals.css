@@ -4,11 +4,27 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Breakpoint tiers (fluid mobile -> tablet -> desktop range, fixed-width
+ * ceiling above desktop). Exact pixel values are an implementation choice
+ * left open by the spec:
+ *   - mobile:  0–767px   (default, no prefix required)
+ *   - tablet:  768px+    (`tablet:` variant, --breakpoint-tablet)
+ *   - desktop: 1024px+   (`desktop:` variant, --breakpoint-desktop)
+ *   - above desktop (1440px+): fluid growth stops; content is capped at a
+ *     fixed max-width and centered via the `.container-editorial` utility
+ *     defined below, instead of continuing to stretch.
+ */
+@theme {
+  --breakpoint-tablet: 48rem; /* 768px */
+  --breakpoint-desktop: 64rem; /* 1024px */
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-sans);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -48,73 +64,81 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * Editorial redesign palette: near-monochrome (black/white/grey) plus
+ * exactly one non-neutral accent (a vermillion, #E3452C) used for BOTH
+ * --accent and --destructive in each theme. --background in :root is
+ * sampled from the reference image's light-grey card background.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --background: #e4e4e2;
+  --foreground: #141414;
+  --card: #ececea;
+  --card-foreground: #141414;
+  --popover: #ececea;
+  --popover-foreground: #141414;
+  --primary: #141414;
+  --primary-foreground: #f5f5f3;
+  --secondary: #d4d4d1;
+  --secondary-foreground: #141414;
+  --muted: #d4d4d1;
+  --muted-foreground: #5c5c58;
+  --accent: #e3452c;
+  --accent-foreground: #f5f5f3;
+  --destructive: #e3452c;
+  --destructive-foreground: #f5f5f3;
+  --border: #c7c7c3;
+  --input: #c7c7c3;
+  --ring: #e3452c;
+  --chart-1: #e3452c;
+  --chart-2: #5c5c58;
+  --chart-3: #8a8a86;
+  --chart-4: #b0b0ac;
+  --chart-5: #141414;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #ececea;
+  --sidebar-foreground: #141414;
+  --sidebar-primary: #141414;
+  --sidebar-primary-foreground: #f5f5f3;
+  --sidebar-accent: #e3452c;
+  --sidebar-accent-foreground: #f5f5f3;
+  --sidebar-border: #c7c7c3;
+  --sidebar-ring: #e3452c;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
+  --background: #141414;
+  --foreground: #f0f0ee;
+  --card: #1e1e1e;
+  --card-foreground: #f0f0ee;
+  --popover: #1e1e1e;
+  --popover-foreground: #f0f0ee;
+  --primary: #f0f0ee;
+  --primary-foreground: #141414;
+  --secondary: #2a2a2a;
+  --secondary-foreground: #f0f0ee;
+  --muted: #2a2a2a;
+  --muted-foreground: #a0a09c;
+  --accent: #ff5c3d;
+  --accent-foreground: #141414;
+  --destructive: #ff5c3d;
+  --destructive-foreground: #141414;
+  --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --ring: #ff5c3d;
+  --chart-1: #ff5c3d;
+  --chart-2: #a0a09c;
+  --chart-3: #78786f;
+  --chart-4: #4a4a45;
+  --chart-5: #f0f0ee;
+  --sidebar: #1e1e1e;
+  --sidebar-foreground: #f0f0ee;
+  --sidebar-primary: #f0f0ee;
+  --sidebar-primary-foreground: #141414;
+  --sidebar-accent: #ff5c3d;
+  --sidebar-accent-foreground: #141414;
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: #ff5c3d;
 }
 
 @layer base {
@@ -127,4 +151,14 @@
   html {
     @apply font-sans;
   }
+}
+
+/*
+ * Fixed-width ceiling above the desktop breakpoint: content grows fluidly
+ * through mobile/tablet/desktop, then stops stretching and is centered at
+ * a fixed max-width once the viewport exceeds 1440px.
+ */
+.container-editorial {
+  max-width: 90rem; /* 1440px */
+  margin-inline: auto;
 }

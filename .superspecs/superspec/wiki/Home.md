@@ -16,7 +16,7 @@ Knowledge base distilled from shipped features — architecture decisions, patte
 |--------|-------|-------------|
 | [[techstack/profile\|techstack]] | 1 | 2026-09-17 |
 | [[data/Home\|data]] | 1 | 2026-09-16 |
-| [[ui/Home\|ui]] | 1 | 2026-09-17 |
+| [[ui/Home\|ui]] | 2 | 2026-09-17 |
 | [[patterns/Home\|patterns]] | 3 | 2026-09-17 |
 | [[auth/]] | 1 | 2026-06-19 (example content) |
 
@@ -24,6 +24,9 @@ Knowledge base distilled from shipped features — architecture decisions, patte
 
 _(last 10 — full history in [[log]])_
 
+- 2026-09-17: [[ui/design-tokens-theming]] — new: design tokens, fluid `clamp()` typography, Tailwind v4 breakpoint tiers, dark/light theme-toggle convention (editorial-redesign)
+- 2026-09-17: [[ui/session-state-pattern]] — updated: `advance()` auto-advance consumer pattern (editorial-redesign)
+- 2026-09-17: [[techstack/profile]] — updated: editorial-redesign shipped (Inter font, Exaggerated Minimalism style, Tailwind v4 breakpoints)
 - 2026-09-17: [[ui/session-state-pattern]] — updated: configurable session size, flag-order tracking, results-summary lookup pattern (session-size-summary)
 - 2026-09-17: [[techstack/profile]] — updated: session-size-summary shipped
 - 2026-09-17: [[patterns/web-speech-voice-selection]] — new: German voice selection, overlap prevention, and a real async-loading race found via manual browser testing
@@ -31,9 +34,6 @@ _(last 10 — full history in [[log]])_
 - 2026-09-17: [[techstack/profile]] — updated: speech-controls shipped, dev-server LAN access gotcha documented
 - 2026-09-16: [[patterns/fake-db-client-testing]] — new: how Turso-touching code is unit-tested without a real DB or wire mock
 - 2026-09-16: [[ui/session-state-pattern]] — new: the immutable session state machine behind the flashcard practice flow
-- 2026-09-16: [[data/word-bank-schema]] — new: the `words` table schema and idempotent CSV seeding
-- 2026-09-16: [[techstack/profile]] — updated: Turso provisioned, 533-word list seeded, open questions resolved
-- 2026-09-16: [[techstack/profile]] — Tech stack profile established; Next.js project scaffolded
 
 ---
 

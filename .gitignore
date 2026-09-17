@@ -37,6 +37,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# installed Claude Code skills (vendored tool data/scripts, not project
+# source — re-fetchable via the skill installer, not something to track)
+/.agents/
+/.claude/
+skills-lock.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -2,7 +2,7 @@ title: Tech Stack Profile
 tags: [techstack, setup, infrastructure]
 created: 2026-09-16
 updated: 2026-09-17
-sources: [techstack-session, flashcard-session, speech-controls, session-size-summary]
+sources: [techstack-session, flashcard-session, speech-controls, session-size-summary, editorial-redesign]
 
 # Tech Stack Profile
 
@@ -27,7 +27,7 @@ sources: [techstack-session, flashcard-session, speech-controls, session-size-su
 - **Framework:** Next.js 16 (App Router, Turbopack)
 - **Language:** TypeScript (strict mode)
 - **Rendering:** Static/client — no server data needs, all state is client + Turso
-- **Styling:** Tailwind CSS v4 + shadcn/ui (Radix base, "Nova" preset — Lucide icons, Geist font)
+- **Styling:** Tailwind CSS v4 + shadcn/ui (Radix base). Visual design follows "Exaggerated Minimalism" (near-monochrome + single non-neutral accent, huge fluid `clamp()`-scaled typography, extreme whitespace) since editorial-redesign — see [[ui/design-tokens-theming]]. Font is Inter (`next/font/google`), replacing the original Geist scaffold entirely. Custom Tailwind v4 `@theme` breakpoint tiers (`tablet`: 48rem / `desktop`: 64rem) plus a fixed-width ceiling above desktop.
 - **State:** Local component state + Tanstack Query for Turso data; session progress mirrored to `localStorage`
 - **Testing:** Vitest + Testing Library (jsdom)
 
@@ -146,4 +146,5 @@ _Note: automated installation of these third-party skills was blocked by the ses
 5. ~~Speech controls (German voice, Play button, speed, manual voice selection)~~ — done; see [[patterns/web-speech-voice-selection]].
 6. ~~Session size selector + results summary~~ — done; see [[ui/session-state-pattern]]'s updated sections.
 7. Reference this profile in every spec for consistency.
-8. Next feature candidates: a "review hardest words" / spaced-repetition mode (explicitly deferred in `superspec/specs/flashcard-session/spec.md`'s Out of Scope, but the score data it needs already exists — now made more directly actionable by session-size-summary's results view, which shows exactly which words were wrong).
+8. ~~Editorial redesign (fullscreen fluid layout, Inter, dark/light theme toggle, auto-advance replacing "Next Word")~~ — done; see [[ui/design-tokens-theming]] and [[ui/session-state-pattern]]'s `advance()` section.
+9. Next feature candidates: a "review hardest words" / spaced-repetition mode (explicitly deferred in `superspec/specs/flashcard-session/spec.md`'s Out of Scope, but the score data it needs already exists — now made more directly actionable by session-size-summary's results view, which shows exactly which words were wrong). A real mobile/tablet visual spot-check of the editorial redesign outside the sandboxed dev environment used during execution is also still outstanding (see [[ui/design-tokens-theming]] Gotchas).
