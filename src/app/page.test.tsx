@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor, within } from "@testing-library/rea
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Home from "./page";
 import { useWords, useFlagWord } from "@/hooks/use-words";
+import { useSession, signOut } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 import { clearSession, saveSession } from "@/lib/session-storage";
 import { createSessionState, flagWord, pickNextWord, type SessionState } from "@/lib/session";
 import { speak, listGermanVoices } from "@/lib/speech";
@@ -11,9 +13,20 @@ import { loadVoiceURI, saveVoiceURI, clearVoiceURI } from "@/lib/voice-settings"
 import { loadSessionSize, saveSessionSize } from "@/lib/session-size-settings";
 import { loadTheme, saveTheme } from "@/lib/theme-settings";
 
+const TEST_USER_ID = "test-user-id";
+
 vi.mock("@/hooks/use-words", () => ({
   useWords: vi.fn(),
   useFlagWord: vi.fn(),
+}));
+
+vi.mock("@/lib/auth-client", () => ({
+  useSession: vi.fn(),
+  signOut: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(),
 }));
 
 vi.mock("@/lib/speech", () => ({
@@ -44,6 +57,9 @@ vi.mock("@/lib/theme-settings", () => ({
 
 const mockedUseWords = vi.mocked(useWords);
 const mockedUseFlagWord = vi.mocked(useFlagWord);
+const mockedUseSession = vi.mocked(useSession);
+const mockedSignOut = vi.mocked(signOut);
+const mockedUseRouter = vi.mocked(useRouter);
 const mockedLoadSpeed = vi.mocked(loadSpeed);
 const mockedSaveSpeed = vi.mocked(saveSpeed);
 const mockedListGermanVoices = vi.mocked(listGermanVoices);
@@ -96,10 +112,26 @@ function setupUseWords(words: ReturnType<typeof makeWords>) {
 
 describe("Home practice screen", () => {
   let mutateAsync: ReturnType<typeof vi.fn>;
+  let routerPush: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     document.documentElement.classList.remove("dark");
-    clearSession();
+    clearSession(TEST_USER_ID);
+    routerPush = vi.fn();
+    mockedUseRouter.mockReturnValue({
+      push: routerPush,
+    } as unknown as ReturnType<typeof useRouter>);
+    mockedUseSession.mockReturnValue({
+      data: {
+        user: { id: TEST_USER_ID, name: "Test Learner", email: "learner@example.com" },
+      },
+      isPending: false,
+      isRefetching: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSession>);
+    mockedSignOut.mockReset();
+    mockedSignOut.mockResolvedValue(undefined as never);
     mutateAsync = vi.fn().mockResolvedValue(undefined);
     mockedUseFlagWord.mockReturnValue({
       mutateAsync,
@@ -301,7 +333,7 @@ describe("Home practice screen", () => {
     const words = makeWords(5);
     let state: SessionState = createSessionState(words, 24);
     state = pickNextWord(state);
-    saveSession<SessionState>(state);
+    saveSession<SessionState>(TEST_USER_ID, state);
     const currentWordText = state.current!.text;
 
     setupUseWords(words);
@@ -337,7 +369,7 @@ describe("Home practice screen", () => {
     await waitFor(() => {
       expect(mockedSaveSpeed).toHaveBeenCalled();
     });
-    const newRate = mockedSaveSpeed.mock.calls[0][0];
+    const newRate = mockedSaveSpeed.mock.calls[0][1];
     expect(newRate).not.toBe(1.0);
 
     vi.mocked(speak).mockClear();
@@ -447,7 +479,7 @@ describe("Home practice screen", () => {
     fireEvent.click(await screen.findByRole("option", { name: "Anna" }));
 
     await waitFor(() => {
-      expect(mockedSaveVoiceURI).toHaveBeenCalledWith("anna-uri");
+      expect(mockedSaveVoiceURI).toHaveBeenCalledWith(TEST_USER_ID, "anna-uri");
     });
 
     vi.mocked(speak).mockClear();
@@ -577,7 +609,7 @@ describe("Home practice screen", () => {
     fireEvent.click(await screen.findByRole("option", { name: "16" }));
 
     await waitFor(() => {
-      expect(mockedSaveSessionSize).toHaveBeenCalledWith(16);
+      expect(mockedSaveSessionSize).toHaveBeenCalledWith(TEST_USER_ID, 16);
     });
   });
 
@@ -649,7 +681,7 @@ describe("Home practice screen", () => {
     completedState = flagWord(completedState, completedState.current!.id, true);
     expect(completedState.pool).toHaveLength(0);
     expect(completedState.current).toBeNull();
-    saveSession<SessionState>(completedState);
+    saveSession<SessionState>(TEST_USER_ID, completedState);
 
     setupUseWords(words);
     renderHome();
@@ -700,6 +732,47 @@ describe("Home practice screen", () => {
     });
   });
 
+  describe("user menu", () => {
+    it("shows the signed-in learner's identity and a Logout action in the header", async () => {
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText(/test learner/i)).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /log ?out/i })).toBeInTheDocument();
+    });
+
+    it("falls back to showing the email when the learner has no name", async () => {
+      mockedUseSession.mockReturnValue({
+        data: { user: { id: TEST_USER_ID, name: "", email: "learner@example.com" } },
+        isPending: false,
+        isRefetching: false,
+        error: null,
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof useSession>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText(/learner@example\.com/i)).toBeInTheDocument();
+    });
+
+    it("activating Logout calls Better Auth's client signOut and redirects to /login", async () => {
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      fireEvent.click(within(header).getByRole("button", { name: /log ?out/i }));
+
+      await waitFor(() => {
+        expect(mockedSignOut).toHaveBeenCalled();
+      });
+      await waitFor(() => {
+        expect(routerPush).toHaveBeenCalledWith("/login");
+      });
+    });
+  });
+
   describe("navigation region", () => {
     it("groups the reveal action and both flag actions together for an active, incomplete session", async () => {
       setupUseWords(makeWords(2));
@@ -746,14 +819,14 @@ describe("Home practice screen", () => {
       await waitFor(() => {
         expect(document.documentElement.classList.contains("dark")).toBe(true);
       });
-      expect(mockedSaveTheme).toHaveBeenCalledWith("dark");
+      expect(mockedSaveTheme).toHaveBeenCalledWith(TEST_USER_ID, "dark");
 
       fireEvent.click(toggle);
 
       await waitFor(() => {
         expect(document.documentElement.classList.contains("dark")).toBe(false);
       });
-      expect(mockedSaveTheme).toHaveBeenLastCalledWith("light");
+      expect(mockedSaveTheme).toHaveBeenLastCalledWith(TEST_USER_ID, "light");
     });
   });
 });

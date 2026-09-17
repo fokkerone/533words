@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Slider } from "@/components/ui/slider";
@@ -12,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useFlagWord, useWords } from "@/hooks/use-words";
+import { useSession, signOut } from "@/lib/auth-client";
+import { getUserId } from "@/lib/session-user";
 import { listGermanVoices, speak } from "@/lib/speech";
 import { loadSpeed, saveSpeed } from "@/lib/speech-settings";
 import { loadVoiceURI, saveVoiceURI, clearVoiceURI } from "@/lib/voice-settings";
@@ -31,28 +34,43 @@ import {
  * A lazy useState initializer (rather than an effect) since this is a
  * one-time synchronous read of local storage before paint.
  */
-function restoreSession(): SessionState | null {
-  const stored = loadSession<SessionState>();
+function restoreSession(userId: string): SessionState | null {
+  const stored = loadSession<SessionState>(userId);
   if (stored && !isSessionComplete(stored)) {
     return stored;
   }
   return null;
 }
 
-export default function Home() {
-  const { data: words, isLoading, isError, error } = useWords();
-  const flagMutation = useFlagWord();
+/**
+ * The practice screen itself, rendered only once a learner ID is known.
+ * Split out from `Home` so every hook/state initializer here (several of
+ * which read localStorage keyed by `userId` at mount, e.g. `restoreSession`
+ * and `loadSpeed`) can treat `userId` as a stable, always-known value
+ * rather than a possibly-null one that might change out from under
+ * already-initialized state.
+ */
+function PracticeScreen({ userId }: { userId: string }) {
+  const router = useRouter();
+  const { data: authSession } = useSession();
+  const identity = authSession?.user.name || authSession?.user.email || "";
+  const { data: words, isLoading, isError, error } = useWords(userId);
+  const flagMutation = useFlagWord(userId);
 
-  const [session, setSession] = useState<SessionState | null>(restoreSession);
+  const [session, setSession] = useState<SessionState | null>(() =>
+    restoreSession(userId),
+  );
   const [revealed, setRevealed] = useState(false);
   const [flagError, setFlagError] = useState<string | null>(null);
-  const [rate, setRate] = useState<number>(loadSpeed);
+  const [rate, setRate] = useState<number>(() => loadSpeed(userId));
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(listGermanVoices);
-  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(
-    loadVoiceURI,
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(() =>
+    loadVoiceURI(userId),
   );
-  const [sessionSize, setSessionSize] = useState<number>(loadSessionSize);
-  const [theme, setTheme] = useState<Theme>(loadTheme);
+  const [sessionSize, setSessionSize] = useState<number>(() =>
+    loadSessionSize(userId),
+  );
+  const [theme, setTheme] = useState<Theme>(() => loadTheme(userId));
   const autoStarted = useRef(false);
 
   // Chrome (among others) loads the voice list asynchronously; re-read it
@@ -119,7 +137,7 @@ export default function Home() {
     const fresh = advance(createSessionState(words, sessionSize));
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time auto-start reacting to the word bank finishing its initial async fetch; guarded by autoStarted so it can't cascade.
     setSession(fresh);
-    saveSession<SessionState>(fresh);
+    saveSession<SessionState>(userId, fresh);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- advance() closes over rate/selectedVoiceURI intentionally read at call time, not tracked as a dependency (mirrors the pre-existing pattern for this effect).
   }, [session, words, sessionSize]);
 
@@ -129,13 +147,13 @@ export default function Home() {
     setSession(fresh);
     setRevealed(false);
     setFlagError(null);
-    saveSession<SessionState>(fresh);
+    saveSession<SessionState>(userId, fresh);
   }
 
   function handleSessionSizeChange(value: string) {
     const size = Number(value);
     setSessionSize(size);
-    saveSessionSize(size);
+    saveSessionSize(userId, size);
     startNewSession(size);
   }
 
@@ -151,23 +169,28 @@ export default function Home() {
   function handleRateChange(value: number[]) {
     const newRate = value[0];
     setRate(newRate);
-    saveSpeed(newRate);
+    saveSpeed(userId, newRate);
   }
 
   function handleVoiceChange(value: string) {
     if (value === "auto") {
       setSelectedVoiceURI(null);
-      clearVoiceURI();
+      clearVoiceURI(userId);
     } else {
       setSelectedVoiceURI(value);
-      saveVoiceURI(value);
+      saveVoiceURI(userId, value);
     }
   }
 
   function handleThemeToggle() {
     const nextTheme: Theme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
-    saveTheme(nextTheme);
+    saveTheme(userId, nextTheme);
+  }
+
+  async function handleLogout() {
+    await signOut();
+    router.push("/login");
   }
 
   async function handleFlag(correct: boolean) {
@@ -184,7 +207,7 @@ export default function Home() {
         next = advance(next);
       }
       setSession(next);
-      saveSession<SessionState>(next);
+      saveSession<SessionState>(userId, next);
     } catch (err) {
       setFlagError(err instanceof Error ? err.message : "Failed to save score.");
     }
@@ -224,6 +247,16 @@ export default function Home() {
         <Button onClick={() => startNewSession(sessionSize)} variant="secondary" size="sm">
           New Session
         </Button>
+        <div className="flex items-center gap-2 border-l border-border pl-2">
+          {identity && (
+            <span className="max-w-[10rem] truncate text-sm text-muted-foreground">
+              {identity}
+            </span>
+          )}
+          <Button onClick={handleLogout} variant="outline" size="sm">
+            Logout
+          </Button>
+        </div>
       </div>
     </header>
   );
@@ -413,4 +446,34 @@ export default function Home() {
       </div>
     </div>
   );
+}
+
+/**
+ * Top-level route component. `middleware.ts`/`src/proxy.ts` already
+ * guarantees an unauthenticated visitor never reaches this page (redirected
+ * to `/login` before any word-bank content is requested), so by the time
+ * this renders a session should resolve almost immediately. Still,
+ * `useSession()` starts in a pending state on first mount, and every
+ * per-learner hook/localStorage read downstream (`useWords`, `useFlagWord`,
+ * and all five settings modules) requires a real, non-null user ID -- so
+ * this component renders nothing but a minimal loading placeholder (no
+ * word text, score, or session-progress content) until `userId` is known,
+ * then mounts `PracticeScreen` with it. `PracticeScreen` is a separate
+ * component (rather than an inline conditional within one component body)
+ * so its own hooks only ever run once a stable `userId` exists -- they
+ * never need to cope with it being null.
+ */
+export default function Home() {
+  const { data: session } = useSession();
+  const userId = getUserId(session);
+
+  if (!userId) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
+  return <PracticeScreen userId={userId} />;
 }
