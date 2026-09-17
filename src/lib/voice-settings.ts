@@ -1,25 +1,27 @@
-const VOICE_URI_KEY = "533words:voice-uri";
+function storageKey(userId: string): string {
+  return `533words:${userId}:voice-uri`;
+}
 
-export function saveVoiceURI(voiceURI: string): void {
+export function saveVoiceURI(userId: string, voiceURI: string): void {
   try {
-    localStorage.setItem(VOICE_URI_KEY, voiceURI);
+    localStorage.setItem(storageKey(userId), voiceURI);
   } catch {
     // Saving is best-effort; a failed save must not throw.
   }
 }
 
-export function loadVoiceURI(): string | null {
+export function loadVoiceURI(userId: string): string | null {
   try {
-    const raw = localStorage.getItem(VOICE_URI_KEY);
+    const raw = localStorage.getItem(storageKey(userId));
     return raw === null || raw === "" ? null : raw;
   } catch {
     return null;
   }
 }
 
-export function clearVoiceURI(): void {
+export function clearVoiceURI(userId: string): void {
   try {
-    localStorage.removeItem(VOICE_URI_KEY);
+    localStorage.removeItem(storageKey(userId));
   } catch {
     // Best-effort; nothing to roll back.
   }

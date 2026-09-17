@@ -1,20 +1,23 @@
-const THEME_KEY = "533words:theme";
 const VALID_THEMES = ["light", "dark"] as const;
 const DEFAULT_THEME: Theme = "light";
 
 export type Theme = "light" | "dark";
 
-export function saveTheme(theme: Theme): void {
+function storageKey(userId: string): string {
+  return `533words:${userId}:theme`;
+}
+
+export function saveTheme(userId: string, theme: Theme): void {
   try {
-    localStorage.setItem(THEME_KEY, JSON.stringify(theme));
+    localStorage.setItem(storageKey(userId), JSON.stringify(theme));
   } catch {
     // Saving is best-effort: a failed save must not throw.
   }
 }
 
-export function loadTheme(): Theme {
+export function loadTheme(userId: string): Theme {
   try {
-    const raw = localStorage.getItem(THEME_KEY);
+    const raw = localStorage.getItem(storageKey(userId));
     if (raw === null) {
       return DEFAULT_THEME;
     }

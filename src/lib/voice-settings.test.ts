@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { saveVoiceURI, loadVoiceURI, clearVoiceURI } from "./voice-settings";
 
-const VOICE_URI_KEY = "533words:voice-uri";
+const keyFor = (userId: string) => `533words:${userId}:voice-uri`;
 
 describe("voice-settings", () => {
   beforeEach(() => {
@@ -9,22 +9,30 @@ describe("voice-settings", () => {
   });
 
   it("round-trips a voiceURI through save then load", () => {
-    saveVoiceURI("Google Deutsch");
-    expect(loadVoiceURI()).toBe("Google Deutsch");
+    saveVoiceURI("user-a", "Google Deutsch");
+    expect(loadVoiceURI("user-a")).toBe("Google Deutsch");
   });
 
   it("returns null when nothing is stored (automatic selection)", () => {
-    expect(loadVoiceURI()).toBeNull();
+    expect(loadVoiceURI("user-a")).toBeNull();
   });
 
   it("clearVoiceURI removes the stored value so loadVoiceURI returns null", () => {
-    saveVoiceURI("Google Deutsch");
-    clearVoiceURI();
-    expect(loadVoiceURI()).toBeNull();
+    saveVoiceURI("user-a", "Google Deutsch");
+    clearVoiceURI("user-a");
+    expect(loadVoiceURI("user-a")).toBeNull();
   });
 
   it("does not throw when localStorage access fails", () => {
-    localStorage.setItem(VOICE_URI_KEY, "");
-    expect(() => loadVoiceURI()).not.toThrow();
+    localStorage.setItem(keyFor("user-a"), "");
+    expect(() => loadVoiceURI("user-a")).not.toThrow();
+  });
+
+  it("scopes storage per learner", () => {
+    saveVoiceURI("user-a", "Anna");
+    saveVoiceURI("user-b", "Petra");
+
+    expect(loadVoiceURI("user-a")).toBe("Anna");
+    expect(loadVoiceURI("user-b")).toBe("Petra");
   });
 });
