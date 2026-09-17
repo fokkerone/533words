@@ -13,25 +13,26 @@ export type SessionState = {
   current: Word | null;
   /** Map of word id -> how it was flagged. */
   flagged: Record<string, FlagValue>;
+  /** Word ids in the exact order they were flagged. */
+  flagOrder: string[];
   /** Total number of words drawn into this session (pool size at start). */
   total: number;
 };
 
-const SESSION_SIZE = 24;
-
 /**
- * Draws up to SESSION_SIZE unique words from the given word list, in
- * shuffled order, with no word appearing more than once.
+ * Draws up to sessionSize unique words from the given word list, in
+ * shuffled order, with no word appearing more than once. If the word
+ * list has fewer than sessionSize words, every word is used.
  */
-export function startSession(words: Word[]): Word[] {
+export function startSession(words: Word[], sessionSize: number): Word[] {
   const shuffled = [...words].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, SESSION_SIZE);
+  return shuffled.slice(0, sessionSize);
 }
 
-/** Builds a fresh session state from a word list. */
-export function createSessionState(words: Word[]): SessionState {
-  const pool = startSession(words);
-  return { pool, current: null, flagged: {}, total: pool.length };
+/** Builds a fresh session state from a word list, drawing up to sessionSize words. */
+export function createSessionState(words: Word[], sessionSize: number): SessionState {
+  const pool = startSession(words, sessionSize);
+  return { pool, current: null, flagged: {}, flagOrder: [], total: pool.length };
 }
 
 /**
@@ -65,6 +66,7 @@ export function flagWord(state: SessionState, wordId: string, correct: boolean):
     ...state,
     current: null,
     flagged: { ...state.flagged, [wordId]: correct ? "correct" : "incorrect" },
+    flagOrder: [...state.flagOrder, wordId],
   };
 }
 

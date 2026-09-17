@@ -38,3 +38,11 @@ Append-only activity log. Every ingest, query, and lint run appends an entry her
 - Test suite: 77/77 passing, 18/18 spec scenarios covered, no regressions
 - Notable: a real async voice-loading race was found via live browser testing (not caught by mocked unit tests) and fixed — see patterns/web-speech-voice-selection.md
 
+## [2026-09-17] ingest | session-size-summary: session size selector + results summary
+
+- Created: (none — extended existing pages rather than adding new ones)
+- Updated: ui/session-state-pattern.md (configurable session size, flagOrder tracking, results-lookup pattern), ui/Home.md, techstack/profile.md (shipped)
+- Domains touched: ui, techstack
+- Spec: `superspec/specs/session-size-summary/spec.md`
+- Test suite: 100/100 passing, 11/11 spec scenarios covered, no regressions
+
