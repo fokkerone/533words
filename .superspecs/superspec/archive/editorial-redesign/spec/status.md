@@ -1,7 +1,13 @@
 # Editorial Redesign (Exaggerated Minimalism) — Status
 
 ## Phase
-3 — Verify ✅
+4 — Shipped ✅
+
+## Completed
+2026-09-17
+
+## PR
+None — no GitHub remote configured for this repo; shipped via local `git merge --no-ff superspec/editorial-redesign` into `main`.
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -15,8 +21,8 @@
 - [x] All tests passing (113/113)
 - [x] Code review passed (no Critical findings)
 - [x] Wiki imported
-- [ ] PR created
-- [ ] Archived
+- [x] PR created (N/A — local merge, see above)
+- [x] Archived
 
 ## Test Results
 - Suite: 113 passing, 0 failing, 0 skipped
