@@ -5,6 +5,14 @@
 **Context estimate:** ~18k / 200k ✅
 **Started:** 2026-09-17
 
+## Branch
+
+Branch name: `superspec/user-accounts`
+Type: branch
+Worktree path: N/A
+Created from: main @ 23483d9
+Created: 2026-09-17
+
 ## Execution Strategy
 
 Wave execution order: Wave 1 → Wave 2 → Wave 3
