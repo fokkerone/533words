@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Home from "./page";
 import { useWords, useFlagWord } from "@/hooks/use-words";
 import { clearSession, saveSession } from "@/lib/session-storage";
-import { createSessionState, pickNextWord, type SessionState } from "@/lib/session";
+import { createSessionState, flagWord, pickNextWord, type SessionState } from "@/lib/session";
 import { speak, listGermanVoices } from "@/lib/speech";
 import { loadSpeed, saveSpeed } from "@/lib/speech-settings";
 import { loadVoiceURI, saveVoiceURI, clearVoiceURI } from "@/lib/voice-settings";
@@ -629,5 +629,25 @@ describe("Home practice screen", () => {
     await waitFor(() => {
       expect(screen.queryByRole("table")).not.toBeInTheDocument();
     });
+  });
+
+  it("does not restore a completed session's results summary after a reload; a fresh session auto-starts instead", async () => {
+    const words = makeWords(1);
+    let completedState: SessionState = createSessionState(words, 24);
+    completedState = pickNextWord(completedState);
+    completedState = flagWord(completedState, completedState.current!.id, true);
+    // Sanity check this fixture really is a completed session before relying on it.
+    expect(completedState.pool).toHaveLength(0);
+    expect(completedState.current).toBeNull();
+    saveSession<SessionState>(completedState);
+
+    setupUseWords(words);
+    renderHome();
+
+    // The stored completed session (and its results) is not restored.
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    // Instead, a fresh session auto-starts (same 1-word bank), ready to pick.
+    expect(await screen.findByRole("button", { name: /next word/i })).not.toBeDisabled();
+    expect(screen.getByText(/press "next word" to begin/i)).toBeInTheDocument();
   });
 });
