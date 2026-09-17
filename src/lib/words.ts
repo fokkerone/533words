@@ -11,10 +11,24 @@ export function adjustScore(currentScore: number, correct: boolean): number {
 
 type WordRow = { id: string; text: string; score: number };
 
-/** Fetches every word in the word bank, for building a session pool. */
-export async function fetchWords(client: DbClient): Promise<Word[]> {
+/**
+ * Fetches every word in the word bank, each annotated with the given
+ * learner's own score for that word (0 if that learner has never flagged
+ * it -- the "implicit 0" / lazy-row requirement).
+ *
+ * LEFT JOINs against `user_word_scores` scoped to `userId` so a word with
+ * no score row for this learner still comes back (with score 0 via
+ * COALESCE) rather than being silently dropped, and so no other learner's
+ * score is ever read.
+ */
+export async function fetchWords(client: DbClient, userId: string): Promise<Word[]> {
   const result = (await client.execute({
-    sql: "SELECT id, text, score FROM words",
+    sql: `SELECT words.id AS id, words.text AS text, COALESCE(user_word_scores.score, 0) AS score
+          FROM words
+          LEFT JOIN user_word_scores
+            ON user_word_scores.word_id = words.id
+            AND user_word_scores.user_id = :userId`,
+    args: { userId },
   })) as { rows: WordRow[] };
 
   return result.rows.map((row) => ({
@@ -25,9 +39,13 @@ export async function fetchWords(client: DbClient): Promise<Word[]> {
 }
 
 /**
- * Adjusts a word's word-bank score by +1 (correct) or -1 (incorrect) and
- * persists it. Reads the current score first so the adjustment is relative
- * to what's actually in the DB, then writes the new score.
+ * Adjusts a learner's per-word score by +1 (correct) or -1 (incorrect) and
+ * persists it to `user_word_scores`. Reads the learner's current score for
+ * this word first (0 if no row exists yet, via the same LEFT JOIN +
+ * COALESCE pattern as `fetchWords`) so the adjustment is relative to what's
+ * actually in the DB, then upserts the new score -- creating the row on
+ * the learner's first flag of this word, updating it on every subsequent
+ * flag, keyed by (user_id, word_id).
  *
  * Named distinctly from `session.ts`'s `flagWord` (a pure in-memory session
  * state reducer) since both are needed together when wiring up the UI.
@@ -39,12 +57,18 @@ export async function fetchWords(client: DbClient): Promise<Word[]> {
  */
 export async function writeWordFlag(
   client: DbClient,
+  userId: string,
   wordId: string,
   correct: boolean
 ): Promise<Word> {
   const existing = (await client.execute({
-    sql: "SELECT id, text, score FROM words WHERE id = :id",
-    args: { id: wordId },
+    sql: `SELECT words.id AS id, words.text AS text, COALESCE(user_word_scores.score, 0) AS score
+          FROM words
+          LEFT JOIN user_word_scores
+            ON user_word_scores.word_id = words.id
+            AND user_word_scores.user_id = :userId
+          WHERE words.id = :wordId`,
+    args: { userId, wordId },
   })) as { rows: WordRow[] };
 
   const row = existing.rows[0];
@@ -55,8 +79,10 @@ export async function writeWordFlag(
   const newScore = adjustScore(row.score, correct);
 
   await client.execute({
-    sql: "UPDATE words SET score = :score WHERE id = :id",
-    args: { score: newScore, id: wordId },
+    sql: `INSERT INTO user_word_scores (user_id, word_id, score)
+          VALUES (:userId, :wordId, :score)
+          ON CONFLICT (user_id, word_id) DO UPDATE SET score = :score`,
+    args: { userId, wordId, score: newScore },
   });
 
   return { id: row.id, text: row.text, score: newScore };
