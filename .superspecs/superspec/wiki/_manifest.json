@@ -26,6 +26,15 @@
         "patterns/Home"
       ],
       "pages_updated": ["techstack/profile", "Home", "log", "_meta/taxonomy"]
+    },
+    {
+      "slug": "speech-controls",
+      "ingested_at": "2026-09-17T08:25:00Z",
+      "pages_created": [
+        "patterns/web-speech-voice-selection",
+        "patterns/jsdom-radix-polyfills"
+      ],
+      "pages_updated": ["techstack/profile", "patterns/Home", "Home", "log"]
     }
   ]
 }

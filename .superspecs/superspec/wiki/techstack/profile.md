@@ -1,8 +1,8 @@
 title: Tech Stack Profile
 tags: [techstack, setup, infrastructure]
 created: 2026-09-16
-updated: 2026-09-16
-sources: [techstack-session, flashcard-session]
+updated: 2026-09-17
+sources: [techstack-session, flashcard-session, speech-controls]
 
 # Tech Stack Profile
 
@@ -58,7 +58,7 @@ sources: [techstack-session, flashcard-session]
 
 ### Key Libraries
 - @libsql/client — Turso client, imported from `@libsql/client/web` for browser/edge compatibility [required]
-- Web Speech API (`window.speechSynthesis`) — native browser API for word read-aloud, no package [required]
+- Web Speech API (`window.speechSynthesis`) — native browser API for word read-aloud and voice selection, no package; see [[patterns/web-speech-voice-selection]] [required]
 
 ## Deployment & Infrastructure
 
@@ -66,6 +66,7 @@ sources: [techstack-session, flashcard-session]
 - **Compute:** Vercel static/edge hosting (no serverless functions needed — client-direct DB)
 - **IaC:** None
 - **Environments:** Single production environment; Vercel preview deployments per PR/branch
+- **Dev server:** Next.js dev server requires `allowedDevOrigins` in `next.config.ts` to be reachable from other devices on the LAN (e.g. testing on a phone/tablet) — blocked by default as a CSRF protection; see `next.config.ts` for the current LAN IP entry, which needs updating if the network's DHCP reassigns it. ^[inferred: this is a Next.js 16 default behavior, confirmed via the dev server's own warning log during debugging, not something documented elsewhere in this project]
 
 ### Recommended Skills
 - (none — Vercel handles hosting/build; no IaC or container work)
@@ -142,5 +143,6 @@ _Note: automated installation of these third-party skills was blocked by the ses
 2. ~~Load the 533 NRW word list into the DB~~ — done, see [[data/word-bank-schema]].
 3. Install the community skills above (copy-paste install commands) if desired — still outstanding.
 4. ~~Run `/superspecs:discuss` to plan the session flow feature~~ — done; see [[ui/session-state-pattern]] and [[patterns/fake-db-client-testing]] for what was built.
-5. Reference this profile in every spec for consistency.
-6. Next feature candidates: a "review hardest words" / spaced-repetition mode (explicitly deferred in `superspec/specs/flashcard-session/spec.md`'s Out of Scope, but the score data it needs already exists).
+5. ~~Speech controls (German voice, Play button, speed, manual voice selection)~~ — done; see [[patterns/web-speech-voice-selection]].
+6. Reference this profile in every spec for consistency.
+7. Next feature candidates: a "review hardest words" / spaced-repetition mode (explicitly deferred in `superspec/specs/flashcard-session/spec.md`'s Out of Scope, but the score data it needs already exists).

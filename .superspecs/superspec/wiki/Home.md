@@ -1,7 +1,7 @@
 ---
 title: Wiki Home
 tags: [index, home]
-updated: 2026-09-16
+updated: 2026-09-17
 ---
 
 # Project Wiki
@@ -14,16 +14,19 @@ Knowledge base distilled from shipped features — architecture decisions, patte
 
 | Domain | Pages | Last updated |
 |--------|-------|-------------|
-| [[techstack/profile\|techstack]] | 1 | 2026-09-16 |
+| [[techstack/profile\|techstack]] | 1 | 2026-09-17 |
 | [[data/Home\|data]] | 1 | 2026-09-16 |
 | [[ui/Home\|ui]] | 1 | 2026-09-16 |
-| [[patterns/Home\|patterns]] | 1 | 2026-09-16 |
+| [[patterns/Home\|patterns]] | 3 | 2026-09-17 |
 | [[auth/]] | 1 | 2026-06-19 (example content) |
 
 ## Recent Updates
 
 _(last 10 — full history in [[log]])_
 
+- 2026-09-17: [[patterns/web-speech-voice-selection]] — new: German voice selection, overlap prevention, and a real async-loading race found via manual browser testing
+- 2026-09-17: [[patterns/jsdom-radix-polyfills]] — new: browser API polyfills needed for shadcn/Radix components under jsdom
+- 2026-09-17: [[techstack/profile]] — updated: speech-controls shipped, dev-server LAN access gotcha documented
 - 2026-09-16: [[patterns/fake-db-client-testing]] — new: how Turso-touching code is unit-tested without a real DB or wire mock
 - 2026-09-16: [[ui/session-state-pattern]] — new: the immutable session state machine behind the flashcard practice flow
 - 2026-09-16: [[data/word-bank-schema]] — new: the `words` table schema and idempotent CSV seeding
