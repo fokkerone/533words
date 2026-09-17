@@ -1,7 +1,7 @@
 # Editorial Redesign (Exaggerated Minimalism) — Status
 
 ## Phase
-2.2 — Execute › Branch ✅
+2.3–2.5 — Execute ✅ (all waves complete)
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -11,9 +11,9 @@
 - [x] Wiki conflicts: none
 - [x] Techstack conflicts: none
 - [x] Branch created (superspec/editorial-redesign)
-- [ ] Subagent execution complete
-- [ ] All tests passing
-- [ ] Code review passed (no Critical findings)
+- [x] Subagent execution complete (Wave 1: tasks 1.1, 1.2; Wave 2: task 2.1)
+- [x] All tests passing (113/113)
+- [x] Code review passed (no Critical findings)
 - [ ] Wiki imported
 - [ ] PR created
 - [ ] Archived
