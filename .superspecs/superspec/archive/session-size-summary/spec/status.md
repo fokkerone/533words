@@ -1,7 +1,13 @@
 # Session Size Selector & Results Summary — Status
 
 ## Phase
-3 — Verify ✅
+4 — Shipped ✅
+
+## Completed
+2026-09-17
+
+## PR
+No GitHub remote configured for this repo — merged directly into `main` locally (merge commit, `--no-ff`) instead of via a PR.
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -15,8 +21,8 @@
 - [x] All tests passing (100/100)
 - [x] Code review passed (no Critical findings; clean implementation both waves)
 - [x] Wiki imported
-- [ ] PR created
-- [ ] Archived
+- [x] PR created (N/A — local merge, see above)
+- [x] Archived
 
 ## Test Results
 - Suite: 100 passing, 0 failing, 0 skipped
