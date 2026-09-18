@@ -51,6 +51,23 @@
         "Home",
         "log"
       ]
+    },
+    {
+      "slug": "user-accounts",
+      "ingested_at": "2026-09-18T08:15:00Z",
+      "pages_created": [
+        "auth/better-auth-setup",
+        "auth/Home",
+        "patterns/per-user-scoped-storage"
+      ],
+      "pages_updated": [
+        "data/word-bank-schema",
+        "ui/session-state-pattern",
+        "techstack/profile",
+        "patterns/Home",
+        "Home",
+        "log"
+      ]
     }
   ]
 }

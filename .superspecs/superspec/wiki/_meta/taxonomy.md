@@ -1,6 +1,6 @@
 ---
 title: Wiki Taxonomy
-updated: 2026-09-16
+updated: 2026-09-18
 ---
 
 # Wiki Taxonomy
@@ -73,6 +73,8 @@ Tags mirror domain names. Every page gets a tag matching its domain.
 - `state-management` — session/UI state modeling
 - `react` — React-specific patterns
 - `seeding` — data seeding/import scripts
+- `user-accounts` — the user-accounts feature (Better Auth login/register, per-learner scoring)
+- `sessions` — auth session handling
 
 ## Meta Tags
 

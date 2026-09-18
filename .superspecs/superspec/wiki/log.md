@@ -61,3 +61,12 @@ Append-only activity log. Every ingest, query, and lint run appends an entry her
 - Updated: Home.md (dropped the auth domain row), _manifest.json (dropped the example manifest entry)
 - Domains touched: auth (removed)
 
+## [2026-09-18] ingest | user-accounts: Better Auth login/register + per-learner scores
+
+- Created: auth/better-auth-setup.md, auth/Home.md, patterns/per-user-scoped-storage.md
+- Updated: data/word-bank-schema.md (user_word_scores replaces global words.score), ui/session-state-pattern.md (Home/PracticeScreen split), techstack/profile.md (Better Auth, first server-side surface), patterns/Home.md, Home.md
+- Domains touched: auth (new), data, ui, patterns, techstack
+- Spec: `superspec/specs/user-accounts/spec.md`
+- Test suite: 148/148 passing, 15/15 spec scenarios accounted for (13 automated, 2 explicitly manually-verified per GRILL.md's Google-OAuth-credential carve-out), no regressions
+- Notable: this is the project's first feature with any server-side code (Better Auth's route handler + Next.js proxy.ts middleware). Found and correctly resolved a genuine Next.js 16 file-convention deprecation (`middleware.ts` → `proxy.ts`) mid-execution; a scenario-coverage gap (Tanstack Query cache scoping) was found and closed during `/verify` itself.
+

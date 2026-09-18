@@ -1,11 +1,11 @@
 title: Immutable Session State Pattern
-summary: How flashcard-session models a multi-step practice flow (pick → speak → reveal → flag) as pure, immutable state transitions, kept separate from React and from the DB. Extended by session-size-summary with a configurable session size and flag-order tracking, and by editorial-redesign with an auto-advance consumer pattern.
-tags: [ui, flashcard-session, session-size-summary, editorial-redesign, state-management, react]
+summary: How flashcard-session models a multi-step practice flow (pick → speak → reveal → flag) as pure, immutable state transitions, kept separate from React and from the DB. Extended by session-size-summary with a configurable session size and flag-order tracking, by editorial-redesign with an auto-advance consumer pattern, and by user-accounts with a per-learner Home/PracticeScreen split.
+tags: [ui, flashcard-session, session-size-summary, editorial-redesign, user-accounts, state-management, react]
 spec: "[[flashcard-session]]"
 created: 2026-09-16
-updated: 2026-09-17
+updated: 2026-09-18
 provenance:
-  sources: [specs/flashcard-session/spec.md, specs/flashcard-session/GRILL.md, phases/flashcard-session-execute/review-log.md, specs/session-size-summary/spec.md, specs/session-size-summary/GRILL.md, phases/session-size-summary-execute/review-log.md, specs/editorial-redesign/spec.md, phases/editorial-redesign-execute/review-log.md]
+  sources: [specs/flashcard-session/spec.md, specs/flashcard-session/GRILL.md, phases/flashcard-session-execute/review-log.md, specs/session-size-summary/spec.md, specs/session-size-summary/GRILL.md, phases/session-size-summary-execute/review-log.md, specs/editorial-redesign/spec.md, phases/editorial-redesign-execute/review-log.md, specs/user-accounts/spec.md, phases/user-accounts-execute/review-log.md]
   extracted: 65%
   inferred: 30%
   ambiguous: 5%
@@ -88,14 +88,22 @@ The results-summary table (session-size-summary) needs each flagged word's *text
 **Because:** editorial-redesign's spec required flagging a word to "both record that flag and select/present the next word in the same action — without requiring a separate 'next word' action," and explicitly forbids a standalone next-word control. `advance()` is `session.ts`'s pure `pickNextWord` plus the speech side-effect, still kept at the `page.tsx` consumer layer (not pushed into `session.ts`, which stays framework/side-effect-free per the original design decision above).
 **Trade-off:** none significant — this is a straightforward consequence of the "no separate next-word control" requirement, confirmed as a reasonable, necessary scope resolution during code review (not scope creep) since without it a session could never advance past `current: null` at start.
 
+### `Home`/`PracticeScreen` split — decoupling session resolution from the practice UI
+**Chose:** `page.tsx`'s default export (`Home`) became a thin wrapper: it resolves the signed-in learner's ID from Better Auth's `useSession()` and renders a minimal loading placeholder until that ID is known, then mounts a separate `PracticeScreen({ userId })` component containing everything that used to be in `page.tsx` directly (the `SessionState`, all settings, `advance()`, etc.).
+**Over:** Keeping one component and defensively handling a possibly-null `userId` inside every hook/localStorage call.
+**Because:** user-accounts (2026-09-18) made `userId` a required parameter on `useWords`/`useFlagWord` and on every settings module's save/load functions (see [[patterns/per-user-scoped-storage]]) — after Better Auth's session gating, there's a real client-render window where `useSession()` hasn't resolved yet. Splitting the component means `PracticeScreen`'s own hooks and lazy `useState` initializers (e.g. `restoreSession(userId)`, `loadSpeed(userId)`) can all assume a stable, non-null `userId` from their very first render, exactly like they already assumed a stable `rate`/`sessionSize` before this change.
+**Trade-off:** none significant — this is a mechanical decomposition, not a design compromise. The loading placeholder itself also satisfies the "no word-bank content shown before a session resolves" requirement at the client level (on top of, not instead of, `[[auth/better-auth-setup]]`'s server-side `proxy.ts` redirect gate).
+
 ## Gotchas
 
 - **Two `flagWord` functions, same name, different jobs:** `session.ts`'s `flagWord(state, wordId, correct): SessionState` (pure, in-memory) collided in name with `words.ts`'s original DB-writing function. Caught in code review after both were built in parallel by separate subagents; the DB-writing one was renamed to `writeWordFlag` rather than aliasing imports in the UI layer. Worth remembering if adding more session-adjacent modules: `flagWord`/`flag*` is an easy name to collide on.
 - **Reveal state lives outside `SessionState` on purpose:** whether the current word's text is shown (`revealed`) is local `useState` in `page.tsx`, not part of the persisted session. Confirmed correct behavior in manual testing: reloading mid-session restores the same current word, but re-hides it (learner has to press Reveal again) — this wasn't explicitly speced but fell out naturally from the design and matches the spirit of "don't spoil the answer on refresh."
 
 ## Related
-- [[data/word-bank-schema]] — where the `Word`/score data this state operates on comes from
+- [[data/word-bank-schema]] — where the `Word`/score data this state operates on comes from (per-learner since user-accounts)
 - [[patterns/fake-db-client-testing]] — how the DB-touching half of the flow (`writeWordFlag`) is tested
 - [[patterns/web-speech-voice-selection]] — the sibling required-vs-optional parameter reasoning `sessionSize` follows
+- [[patterns/per-user-scoped-storage]] — the `userId`-scoping convention `PracticeScreen`'s settings/session calls all follow
+- [[auth/better-auth-setup]] — where the `userId` passed into `PracticeScreen` comes from
 - [[ui/design-tokens-theming]] — the visual redesign and theme-toggle work shipped alongside the `advance()` auto-advance pattern
 - `src/lib/session.ts`, `src/lib/session-storage.ts`, `src/lib/session-size-settings.ts`, `src/app/page.tsx` — implementation

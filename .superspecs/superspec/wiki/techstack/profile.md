@@ -1,8 +1,8 @@
 title: Tech Stack Profile
 tags: [techstack, setup, infrastructure]
 created: 2026-09-16
-updated: 2026-09-17
-sources: [techstack-session, flashcard-session, speech-controls, session-size-summary, editorial-redesign]
+updated: 2026-09-18
+sources: [techstack-session, flashcard-session, speech-controls, session-size-summary, editorial-redesign, user-accounts]
 
 # Tech Stack Profile
 
@@ -14,9 +14,9 @@ sources: [techstack-session, flashcard-session, speech-controls, session-size-su
 | Domain | Technology |
 |---|---|
 | Frontend | Next.js (App Router) + React 19 + TypeScript, Tailwind v4, shadcn/ui |
-| Backend | None — client-direct DB access, no API routes |
-| Database | Turso (hosted libSQL/SQLite), `@libsql/client/web` |
-| Auth | None (personal, single-user app) |
+| Backend | Better Auth's own catch-all route handler only (`/api/auth/[...all]`) — all other app data stays client-direct, no dedicated API routes |
+| Database | Turso (hosted libSQL/SQLite), `@libsql/client/web`; Better Auth talks to the same DB via a Kysely/libSQL dialect |
+| Auth | Better Auth — email+password + Google OAuth, real multi-user accounts (since user-accounts, 2026-09-18) |
 | Deployment | Vercel |
 | CI/CD | Vercel Git integration (auto-deploy on push, preview per PR) |
 | Monitoring | None (minimal setup — personal project) |
@@ -47,17 +47,18 @@ sources: [techstack-session, flashcard-session, speech-controls, session-size-su
 ## Backend
 
 ### Core
-- **Language:** N/A — no server logic
-- **Framework:** N/A
-- **API:** None — browser talks directly to Turso via `@libsql/client/web`
-- **Database:** Turso (hosted libSQL), scoped read+write auth token (NOT account-wide, since the token ships to the client bundle)
-- **Auth:** None
+- **Language:** TypeScript (Next.js Route Handler) — the project's only server-side code, added by user-accounts
+- **Framework:** Better Auth (`/api/auth/[...all]/route.ts`), plus Next.js Middleware/`proxy.ts` for cookie-based route gating
+- **API:** No app-data API — browser still talks directly to Turso via `@libsql/client/web` for words/scores, scoped by the signed-in learner's ID. See [[auth/better-auth-setup]] for the full rationale and the accepted trust boundary this implies.
+- **Database:** Turso (hosted libSQL), scoped read+write auth token (NOT account-wide, since the token ships to the client bundle). Better Auth's own `user`/`session`/`account`/`verification` tables live in the same Turso DB, via a Kysely/libSQL dialect.
+- **Auth:** Better Auth — email+password + Google OAuth. See [[auth/better-auth-setup]].
 
 ### Recommended Skills
-- (none — no backend layer)
+- (none — the server surface is a single route handler + middleware, not a full backend layer)
 
 ### Key Libraries
 - @libsql/client — Turso client, imported from `@libsql/client/web` for browser/edge compatibility [required]
+- better-auth, @libsql/kysely-libsql — authentication + its Turso/Kysely adapter [required, added by user-accounts]
 - Web Speech API (`window.speechSynthesis`) — native browser API for word read-aloud and voice selection, no package; see [[patterns/web-speech-voice-selection]] [required]
 
 ## Deployment & Infrastructure
@@ -113,7 +114,8 @@ sources: [techstack-session, flashcard-session, speech-controls, session-size-su
 
 - Direct client-side Turso access chosen over API routes — simpler for a solo/personal project; accepted tradeoff is the DB token being visible in the browser, mitigated by using a scoped token.
 - Next.js chosen over plain Vite SPA (after initial back-and-forth) to keep the door open for API routes later, even though not used initially.
-- No auth, no error tracking, no e2e tests — deliberately minimal for a personal single-user app for the user's son.
+- No error tracking, no e2e tests — deliberately minimal, personal-scale project.
+- **Auth added (user-accounts, 2026-09-18) without abandoning the client-direct architecture:** the app grew real multi-user auth while keeping the "no API layer for app data" decision intact — the DB-token-in-browser trust model that was accepted for the single-user era was explicitly re-examined and re-accepted for multi-user, rather than silently carried forward. See [[auth/better-auth-setup]].
 
 ## Open Questions
 
@@ -147,4 +149,5 @@ _Note: automated installation of these third-party skills was blocked by the ses
 6. ~~Session size selector + results summary~~ — done; see [[ui/session-state-pattern]]'s updated sections.
 7. Reference this profile in every spec for consistency.
 8. ~~Editorial redesign (fullscreen fluid layout, Inter, dark/light theme toggle, auto-advance replacing "Next Word")~~ — done; see [[ui/design-tokens-theming]] and [[ui/session-state-pattern]]'s `advance()` section.
-9. Next feature candidates: a "review hardest words" / spaced-repetition mode (explicitly deferred in `superspec/specs/flashcard-session/spec.md`'s Out of Scope, but the score data it needs already exists — now made more directly actionable by session-size-summary's results view, which shows exactly which words were wrong). A real mobile/tablet visual spot-check of the editorial redesign outside the sandboxed dev environment used during execution is also still outstanding (see [[ui/design-tokens-theming]] Gotchas).
+9. ~~User accounts (Better Auth login/register, per-learner scoring, per-learner localStorage/query scoping)~~ — done; see [[auth/better-auth-setup]] and [[patterns/per-user-scoped-storage]]. Still outstanding: live Google OAuth credentials need provisioning before that sign-in path can be verified end-to-end (walkthrough documented in [[auth/better-auth-setup]]).
+10. Next feature candidates: a "review hardest words" / spaced-repetition mode (explicitly deferred in `superspec/specs/flashcard-session/spec.md`'s Out of Scope, but the score data it needs already exists — now genuinely per-learner and actionable via session-size-summary's results view). A real mobile/tablet visual spot-check of the editorial redesign outside the sandboxed dev environment used during execution is also still outstanding (see [[ui/design-tokens-theming]] Gotchas).

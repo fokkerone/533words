@@ -1,30 +1,38 @@
 title: Word Bank Schema & Seeding
-summary: The `words` table (id/text/score) in Turso, how it's created, and how the 533-word CSV is idempotently seeded into it.
-tags: [data, flashcard-session, turso, seeding]
+summary: The `words` table (id/text) and the per-learner `user_word_scores` table in Turso, how they're created/migrated, and how the 533-word CSV is idempotently seeded.
+tags: [data, flashcard-session, user-accounts, turso, seeding]
 spec: "[[flashcard-session]]"
 created: 2026-09-16
-updated: 2026-09-16
+updated: 2026-09-18
 provenance:
-  sources: [specs/flashcard-session/spec.md, specs/flashcard-session/GRILL.md, phases/flashcard-session-execute/review-log.md]
-  extracted: 80%
-  inferred: 15%
+  sources: [specs/flashcard-session/spec.md, specs/flashcard-session/GRILL.md, phases/flashcard-session-execute/review-log.md, specs/user-accounts/spec.md, phases/user-accounts-execute/review-log.md]
+  extracted: 75%
+  inferred: 20%
   ambiguous: 5%
 
 # Word Bank Schema & Seeding
 
 ## Summary
-The word bank is a single Turso table, `words` (`id`, `text`, `score`), created by an idempotent migration and populated by an idempotent seed script from a plain-text CSV — one word per line, no header.
+The word bank is a Turso table, `words` (`id`, `text`), created by an idempotent migration and populated by an idempotent seed script from a plain-text CSV — one word per line, no header. Scoring was originally a global `score` column on `words` itself; since user-accounts (2026-09-18), scoring is per-learner via a separate `user_word_scores` table, and the `words.score` column has been dropped.
+
+## Update (user-accounts, 2026-09-18): scoring moved off `words` entirely
+**Chose:** A new `user_word_scores (user_id TEXT, word_id TEXT, score INTEGER DEFAULT 0, PRIMARY KEY (user_id, word_id))` table, with `words.score` dropped via `ALTER TABLE words DROP COLUMN score` (idempotent — checks `PRAGMA table_info(words)` first, falls back to clearing the column to 0 if `DROP COLUMN` isn't supported by a given libSQL build).
+**Over:** Keeping `words.score` and adding a parallel per-user table, or pre-populating a score row for every `(user, word)` pair at signup.
+**Because:** a global score column had no meaning once multiple learners existed; removing it (rather than leaving it unused) avoids a confusing, dead column. Score rows are created lazily — only the first time a learner flags a given word — mirroring the original `DEFAULT 0` behavior exactly (an unflagged word is implicitly 0 for that learner, via `LEFT JOIN user_word_scores ... COALESCE(score, 0)`).
+**Trade-off:** the previous global score history was intentionally NOT migrated or attributed to any account — every learner (including the app's original user) starts fresh at 0. See [[auth/better-auth-setup]] for the full multi-user architecture this schema change was part of.
+**`user_id` type:** `TEXT`, matching Better Auth's `user.id` column type — confirmed by directly querying `sqlite_master` against the real Turso DB after running Better Auth's own migration, not assumed. The FK to `user(id)` is declared even though that table is created by a separate migration step (`npx @better-auth/cli migrate`, not this project's own `initSchema`) — SQLite/libSQL doesn't validate FK targets at `CREATE TABLE` time, so migration order between the two doesn't matter.
 
 ## Context
 533words needed a persistent, scored word list before any session logic could run. Since the app talks to Turso client-direct (see [[techstack/profile]]'s "client-direct Turso" decision), both schema creation and seeding needed to be safe to re-run without special coordination — there's no migration framework, just two small scripts.
 
 ## Key Decisions
 
-### Schema shape
+### Schema shape (original, flashcard-session)
 **Chose:** `words (id TEXT PRIMARY KEY, text TEXT UNIQUE NOT NULL, score INTEGER NOT NULL DEFAULT 0)`.
 **Over:** Any richer schema (categories, difficulty tiers, timestamps).
 **Because:** The spec's CSV format decision was deliberately minimal — one column, no metadata — and YAGNI on anything not needed by the current flashcard-session feature.
 **Trade-off:** A future "review hardest words" feature (deferred, see [[techstack/profile]]) will read `score` directly; no schema change anticipated for that, but categorization/tagging would need a migration.
+**Superseded (2026-09-18):** `words.score` was dropped by user-accounts once scoring became per-learner — see "Update (user-accounts, 2026-09-18)" above. The current `words` table is just `(id, text)`; all scoring lives in `user_word_scores`.
 
 ### Idempotent seeding via SELECT-then-INSERT
 **Chose:** For each word, `SELECT` by `text` first; only `INSERT` if absent.
@@ -37,13 +45,18 @@ The word bank is a single Turso table, `words` (`id`, `text`, `score`), created 
 ```ts
 // src/lib/db.ts
 export function getDb(): Client                         // lazy, memoized real Turso client
-export async function initSchema(client: DbClient): Promise<void>  // CREATE TABLE IF NOT EXISTS words
+export async function initSchema(client: DbClient): Promise<void>  // CREATE TABLE IF NOT EXISTS words, user_word_scores
+export async function dropWordsScoreColumn(client: DbClient): Promise<void>  // one-time destructive migration (user-accounts)
 
 // scripts/seed-words.ts
 export async function seedWords(
   client: DbClient,
   words: string[]
 ): Promise<{ inserted: number; skipped: number }>
+
+// src/lib/words.ts (user-accounts: both now require a learner ID)
+export async function fetchWords(client: DbClient, userId: string): Promise<Word[]>
+export async function writeWordFlag(client: DbClient, userId: string, wordId: string, correct: boolean): Promise<Word>
 ```
 
 `DbClient` is a minimal structural type (`{ execute: (stmt) => Promise<...> }`) shared by both — see [[patterns/fake-db-client-testing]] for why.
@@ -58,4 +71,5 @@ export async function seedWords(
 - [[techstack/profile]] — overall stack, including the client-direct Turso / scoped-token decision this schema lives under
 - [[patterns/fake-db-client-testing]] — how `initSchema`/`seedWords`/`fetchWords`/`writeWordFlag` are all tested without a real DB
 - [[ui/session-state-pattern]] — how the seeded word bank feeds into a practice session
+- [[auth/better-auth-setup]] — the multi-user architecture that drove the `user_word_scores` split, and where `userId` comes from
 - `src/lib/db.ts`, `scripts/migrate.ts`, `scripts/seed-words.ts`, `scripts/data/words.csv` — implementation
