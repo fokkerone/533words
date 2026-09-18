@@ -1,7 +1,13 @@
 # User Accounts (Better Auth login/register + per-user scores) — Status
 
 ## Phase
-3 — Verify ✅
+4 — Shipped ✅
+
+## Completed
+2026-09-18
+
+## PR
+None — no separate branch survived to open a PR from. `superspec/user-accounts` was renamed directly onto `main` and pushed to `origin/main` outside of this session's own actions (confirmed via `git reflog`: "Branch: renamed refs/heads/superspec/user-accounts to refs/heads/main"); all 14 feature commits are present on `main`/`origin/main` exactly as reviewed wave-by-wave. Treated as already integrated — see `superspec/archive/user-accounts/execute/review-log.md` for the full task-by-task review trail in lieu of a PR diff.
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -10,13 +16,13 @@
 - [x] Spec grilled and stress-tested (GRILL.md)
 - [x] Wiki conflicts: none
 - [x] Techstack conflicts: none (one technical risk mitigated via a live-docs-verification instruction, not a conflict)
-- [x] Branch created (superspec/user-accounts)
+- [x] Branch created (superspec/user-accounts — later renamed onto `main`, see PR note above)
 - [x] Subagent execution complete (Wave 1: tasks 1.1, 1.2; Wave 2: tasks 2.1, 2.2, 2.3; Wave 3: task 3.1)
 - [x] All tests passing (148/148)
 - [x] Code review passed (no Critical findings)
 - [x] Wiki imported
-- [ ] PR created
-- [ ] Archived
+- [x] PR created (N/A — see PR note above)
+- [x] Archived
 
 ## Test Results
 - Suite: 148 passing, 0 failing, 0 skipped
