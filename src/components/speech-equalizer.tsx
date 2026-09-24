@@ -42,27 +42,6 @@ function buildBlobPath(points: { x: number; y: number }[]): string {
   return d + "Z";
 }
 
-function buildBlobPath2(points: { x: number; y: number }[]): string {
-  const n = points.length;
-  const midpoint = (
-    a: { x: number; y: number },
-    b: { x: number; y: number },
-  ) => ({
-    x: (a.x + b.x) / 2,
-    y: (a.y + b.y) / 2,
-  });
-
-  const start = midpoint(points[0], points[n - 1]);
-  let d = `M ${start.x} ${start.y} `;
-  for (let i = 0; i < n; i++) {
-    const current = points[i];
-    const next = points[(i + 1) % n];
-    const mid = midpoint(current, next);
-    d += `Q ${current.x} ${current.y} ${mid.x} ${mid.y} `;
-  }
-  return d + "Z";
-}
-
 /**
  * A filled blob (built from N bezier anchor points around a circle) that
  * morphs behind/around the Play button, each anchor's radius driven by a
