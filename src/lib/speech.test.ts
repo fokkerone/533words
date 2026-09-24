@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { listGermanVoices, speak } from "./speech";
 
 type MockVoice = { lang: string; name: string; voiceURI?: string };
@@ -11,6 +11,15 @@ function makeUtteranceMock() {
     this.text = text;
   });
 }
+
+type MockUtteranceInstance = {
+  text: string;
+  voice?: MockVoice;
+  rate?: number;
+  onboundary?: (event: { name: string; charIndex: number; charLength?: number }) => void;
+  onend?: () => void;
+  onerror?: () => void;
+};
 
 function makeSpeechSynthesisMock(options: {
   voices: MockVoice[];
@@ -313,6 +322,181 @@ describe("speak", () => {
       voice?: MockVoice;
     };
     expect(utteranceInstance.voice).toBe(deDeVoice);
+  });
+
+  it("calls onBoundary with the word being spoken when a word boundary fires", () => {
+    (
+      globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+    ).SpeechSynthesisUtterance = makeUtteranceMock();
+    const mockSynth = makeSpeechSynthesisMock({ voices: [] });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+    const onBoundary = vi.fn();
+
+    speak("hallo welt", 1.0, null, { onBoundary });
+
+    const utteranceInstance = mockSynth.speak.mock
+      .calls[0][0] as MockUtteranceInstance;
+    utteranceInstance.onboundary?.({ name: "word", charIndex: 6, charLength: 4 });
+
+    expect(onBoundary).toHaveBeenCalledWith("welt");
+  });
+
+  it("does not call onBoundary for a non-word boundary (e.g. sentence)", () => {
+    (
+      globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+    ).SpeechSynthesisUtterance = makeUtteranceMock();
+    const mockSynth = makeSpeechSynthesisMock({ voices: [] });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+    const onBoundary = vi.fn();
+
+    speak("hallo welt", 1.0, null, { onBoundary });
+
+    const utteranceInstance = mockSynth.speak.mock
+      .calls[0][0] as MockUtteranceInstance;
+    utteranceInstance.onboundary?.({ name: "sentence", charIndex: 0 });
+
+    expect(onBoundary).not.toHaveBeenCalled();
+  });
+
+  it("calls onEnd when the utterance finishes", () => {
+    (
+      globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+    ).SpeechSynthesisUtterance = makeUtteranceMock();
+    const mockSynth = makeSpeechSynthesisMock({ voices: [] });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+    const onEnd = vi.fn();
+
+    speak("hallo", 1.0, null, { onEnd });
+
+    const utteranceInstance = mockSynth.speak.mock
+      .calls[0][0] as MockUtteranceInstance;
+    utteranceInstance.onend?.();
+
+    expect(onEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onEnd when the utterance errors, so a caller's UI never gets stuck", () => {
+    (
+      globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+    ).SpeechSynthesisUtterance = makeUtteranceMock();
+    const mockSynth = makeSpeechSynthesisMock({ voices: [] });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+    const onEnd = vi.fn();
+
+    speak("hallo", 1.0, null, { onEnd });
+
+    const utteranceInstance = mockSynth.speak.mock
+      .calls[0][0] as MockUtteranceInstance;
+    utteranceInstance.onerror?.();
+
+    expect(onEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("works without callbacks (backward compatible)", () => {
+    (
+      globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+    ).SpeechSynthesisUtterance = makeUtteranceMock();
+    const mockSynth = makeSpeechSynthesisMock({ voices: [] });
+    (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+      mockSynth;
+
+    expect(() => speak("hallo", 1.0)).not.toThrow();
+  });
+
+  describe("onTick", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("does not fire before the utterance starts", () => {
+      (
+        globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+      ).SpeechSynthesisUtterance = makeUtteranceMock();
+      const mockSynth = makeSpeechSynthesisMock({ voices: [] });
+      (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+        mockSynth;
+      const onTick = vi.fn();
+
+      speak("hallo", 1.0, null, { onTick });
+      vi.advanceTimersByTime(500);
+
+      expect(onTick).not.toHaveBeenCalled();
+    });
+
+    it("fires repeatedly on an interval once the utterance starts, regardless of whether boundary events ever fire", () => {
+      // This is the whole point of onTick: it must animate for every voice,
+      // including ones (like Chrome's "Google Deutsch") that never report
+      // word boundaries at all -- confirmed via manual testing that some
+      // real voices fire zero `boundary` events for an entire utterance.
+      (
+        globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+      ).SpeechSynthesisUtterance = makeUtteranceMock();
+      const mockSynth = makeSpeechSynthesisMock({ voices: [] });
+      (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+        mockSynth;
+      const onTick = vi.fn();
+
+      speak("hallo", 1.0, null, { onTick });
+      const utteranceInstance = mockSynth.speak.mock
+        .calls[0][0] as MockUtteranceInstance & { onstart?: () => void };
+      utteranceInstance.onstart?.();
+
+      vi.advanceTimersByTime(350);
+
+      expect(onTick.mock.calls.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it("stops ticking once the utterance ends", () => {
+      (
+        globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+      ).SpeechSynthesisUtterance = makeUtteranceMock();
+      const mockSynth = makeSpeechSynthesisMock({ voices: [] });
+      (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+        mockSynth;
+      const onTick = vi.fn();
+
+      speak("hallo", 1.0, null, { onTick });
+      const utteranceInstance = mockSynth.speak.mock
+        .calls[0][0] as MockUtteranceInstance & { onstart?: () => void };
+      utteranceInstance.onstart?.();
+      vi.advanceTimersByTime(150);
+      const callsBeforeEnd = onTick.mock.calls.length;
+
+      utteranceInstance.onend?.();
+      vi.advanceTimersByTime(500);
+
+      expect(onTick.mock.calls.length).toBe(callsBeforeEnd);
+    });
+
+    it("stops ticking if the utterance errors instead of ending normally", () => {
+      (
+        globalThis as unknown as { SpeechSynthesisUtterance?: unknown }
+      ).SpeechSynthesisUtterance = makeUtteranceMock();
+      const mockSynth = makeSpeechSynthesisMock({ voices: [] });
+      (window as unknown as { speechSynthesis?: unknown }).speechSynthesis =
+        mockSynth;
+      const onTick = vi.fn();
+
+      speak("hallo", 1.0, null, { onTick });
+      const utteranceInstance = mockSynth.speak.mock
+        .calls[0][0] as MockUtteranceInstance & { onstart?: () => void };
+      utteranceInstance.onstart?.();
+      vi.advanceTimersByTime(150);
+      const callsBeforeError = onTick.mock.calls.length;
+
+      utteranceInstance.onerror?.();
+      vi.advanceTimersByTime(500);
+
+      expect(onTick.mock.calls.length).toBe(callsBeforeError);
+    });
   });
 });
 

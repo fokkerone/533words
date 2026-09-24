@@ -193,7 +193,7 @@ describe("Home practice screen", () => {
     expect(screen.queryByText(firstWordText!)).not.toBeInTheDocument();
 
     await waitFor(() => {
-      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, null);
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, null, expect.anything());
     });
 
     // The flag controls for the new (unrevealed) word are disabled again.
@@ -376,7 +376,7 @@ describe("Home practice screen", () => {
     fireEvent.click(await screen.findByRole("button", { name: /^play$/i }));
 
     await waitFor(() => {
-      expect(speak).toHaveBeenCalledWith(expect.any(String), newRate, null);
+      expect(speak).toHaveBeenCalledWith(expect.any(String), newRate, null, expect.anything());
     });
   });
 
@@ -393,7 +393,7 @@ describe("Home practice screen", () => {
     fireEvent.click(playButton);
 
     await waitFor(() => {
-      expect(speak).toHaveBeenCalledWith(expect.any(String), 0.8, null);
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 0.8, null, expect.anything());
     });
   });
 
@@ -438,7 +438,7 @@ describe("Home practice screen", () => {
     renderHome();
 
     await waitFor(() => {
-      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.4, null);
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.4, null, expect.anything());
     });
   });
 
@@ -486,7 +486,7 @@ describe("Home practice screen", () => {
     fireEvent.click(screen.getByRole("button", { name: /^play$/i }));
 
     await waitFor(() => {
-      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, "anna-uri");
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, "anna-uri", expect.anything());
     });
   });
 
@@ -510,7 +510,7 @@ describe("Home practice screen", () => {
     fireEvent.click(screen.getByRole("button", { name: /^play$/i }));
 
     await waitFor(() => {
-      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, null);
+      expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, null, expect.anything());
     });
   });
 

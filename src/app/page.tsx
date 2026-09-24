@@ -16,8 +16,17 @@ import { useFlagWord, useWords } from "@/hooks/use-words";
 import { useSession, signOut } from "@/lib/auth-client";
 import { getUserId } from "@/lib/session-user";
 import { listGermanVoices, speak } from "@/lib/speech";
+import {
+  generateFakeFrequencies,
+  RESTING_FREQUENCIES,
+} from "@/lib/speech-equalizer";
+import { SpeechEqualizer } from "@/components/speech-equalizer";
 import { loadSpeed, saveSpeed } from "@/lib/speech-settings";
-import { loadVoiceURI, saveVoiceURI, clearVoiceURI } from "@/lib/voice-settings";
+import {
+  loadVoiceURI,
+  saveVoiceURI,
+  clearVoiceURI,
+} from "@/lib/voice-settings";
 import { loadSessionSize, saveSessionSize } from "@/lib/session-size-settings";
 import { loadSession, saveSession } from "@/lib/session-storage";
 import { loadTheme, saveTheme, type Theme } from "@/lib/theme-settings";
@@ -63,7 +72,8 @@ function PracticeScreen({ userId }: { userId: string }) {
   const [revealed, setRevealed] = useState(false);
   const [flagError, setFlagError] = useState<string | null>(null);
   const [rate, setRate] = useState<number>(() => loadSpeed(userId));
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(listGermanVoices);
+  const [voices, setVoices] =
+    useState<SpeechSynthesisVoice[]>(listGermanVoices);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(() =>
     loadVoiceURI(userId),
   );
@@ -71,6 +81,7 @@ function PracticeScreen({ userId }: { userId: string }) {
     loadSessionSize(userId),
   );
   const [theme, setTheme] = useState<Theme>(() => loadTheme(userId));
+  const [amplitude, setAmplitude] = useState<number[]>(RESTING_FREQUENCIES);
   const autoStarted = useRef(false);
 
   // Chrome (among others) loads the voice list asynchronously; re-read it
@@ -118,7 +129,11 @@ function PracticeScreen({ userId }: { userId: string }) {
   function advance(state: SessionState): SessionState {
     const next = pickNextWord(state);
     if (next.current) {
-      speak(next.current.text, rate, selectedVoiceURI);
+      const word = next.current.text;
+      speak(word, rate, selectedVoiceURI, {
+        onTick: () => setAmplitude(generateFakeFrequencies(word)),
+        onEnd: () => setAmplitude(RESTING_FREQUENCIES),
+      });
     }
     return next;
   }
@@ -163,7 +178,11 @@ function PracticeScreen({ userId }: { userId: string }) {
 
   function handlePlay() {
     if (!session?.current || revealed) return;
-    speak(session.current.text, rate, selectedVoiceURI);
+    const word = session.current.text;
+    speak(word, rate, selectedVoiceURI, {
+      onTick: () => setAmplitude(generateFakeFrequencies(word)),
+      onEnd: () => setAmplitude(RESTING_FREQUENCIES),
+    });
   }
 
   function handleRateChange(value: number[]) {
@@ -209,23 +228,25 @@ function PracticeScreen({ userId }: { userId: string }) {
       setSession(next);
       saveSession<SessionState>(userId, next);
     } catch (err) {
-      setFlagError(err instanceof Error ? err.message : "Failed to save score.");
+      setFlagError(
+        err instanceof Error ? err.message : "Failed to save score.",
+      );
     }
   }
 
   const complete = session ? isSessionComplete(session) : false;
 
   const header = (
-    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-4 tablet:px-8 desktop:px-12">
-      <span className="text-lg font-black tracking-tight desktop:text-xl">
+    <header className='flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-4 tablet:px-8 desktop:px-12'>
+      <span className='text-lg font-black tracking-tight desktop:text-xl'>
         533words
       </span>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className='flex flex-wrap items-center gap-2'>
         <Select
           value={String(sessionSize)}
           onValueChange={handleSessionSizeChange}
         >
-          <SelectTrigger aria-label="Session size" className="w-[5.5rem]">
+          <SelectTrigger aria-label='Session size' className='w-[5.5rem]'>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -238,22 +259,28 @@ function PracticeScreen({ userId }: { userId: string }) {
         </Select>
         <Button
           onClick={handleThemeToggle}
-          variant="outline"
-          size="sm"
-          aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          variant='outline'
+          size='sm'
+          aria-label={
+            theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+          }
         >
           {theme === "dark" ? "Light" : "Dark"}
         </Button>
-        <Button onClick={() => startNewSession(sessionSize)} variant="secondary" size="sm">
+        <Button
+          onClick={() => startNewSession(sessionSize)}
+          variant='secondary'
+          size='sm'
+        >
           New Session
         </Button>
-        <div className="flex items-center gap-2 border-l border-border pl-2">
+        <div className='flex items-center gap-2 border-l border-border pl-2'>
           {identity && (
-            <span className="max-w-[10rem] truncate text-sm text-muted-foreground">
+            <span className='max-w-[10rem] truncate text-sm text-muted-foreground'>
               {identity}
             </span>
           )}
-          <Button onClick={handleLogout} variant="outline" size="sm">
+          <Button onClick={handleLogout} variant='outline' size='sm'>
             Logout
           </Button>
         </div>
@@ -265,14 +292,14 @@ function PracticeScreen({ userId }: { userId: string }) {
 
   if (isLoading) {
     body = (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Loading word bank…</p>
+      <div className='flex flex-1 items-center justify-center'>
+        <p className='text-muted-foreground'>Loading word bank…</p>
       </div>
     );
   } else if (isError) {
     body = (
-      <div className="flex flex-1 items-center justify-center p-4">
-        <Alert variant="destructive" className="max-w-md">
+      <div className='flex flex-1 items-center justify-center p-4'>
+        <Alert variant='destructive' className='max-w-md'>
           <AlertTitle>Failed to load word bank</AlertTitle>
           <AlertDescription>
             {error instanceof Error ? error.message : "Unknown error."}
@@ -282,8 +309,8 @@ function PracticeScreen({ userId }: { userId: string }) {
     );
   } else if (words && words.length === 0) {
     body = (
-      <div className="flex flex-1 items-center justify-center p-4">
-        <Alert className="max-w-md">
+      <div className='flex flex-1 items-center justify-center p-4'>
+        <Alert className='max-w-md'>
           <AlertTitle>Word bank is empty</AlertTitle>
           <AlertDescription>
             There are no words to practice yet. Seed the word bank to start a
@@ -295,26 +322,26 @@ function PracticeScreen({ userId }: { userId: string }) {
   } else {
     body = (
       <>
-        <section className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-8 tablet:px-8 desktop:px-12">
+        <section className='flex flex-1 flex-col items-center justify-center gap-8 px-4 py-8 tablet:px-8 desktop:px-12'>
           {flagError && (
-            <Alert variant="destructive" className="w-full max-w-2xl">
+            <Alert variant='destructive' className='w-full max-w-2xl'>
               <AlertTitle>Could not save score</AlertTitle>
               <AlertDescription>{flagError}</AlertDescription>
             </Alert>
           )}
 
           {complete && session ? (
-            <div className="flex w-full max-w-2xl flex-col items-center gap-4">
-              <p className="text-2xl font-black tablet:text-3xl">
+            <div className='flex w-full max-w-2xl flex-col items-center gap-4'>
+              <p className='text-2xl font-black tablet:text-3xl'>
                 Session complete!
               </p>
-              <table className="w-full text-left text-sm">
+              <table className='w-full text-left text-sm'>
                 <thead>
                   <tr>
-                    <th className="pr-2 font-medium text-muted-foreground">
+                    <th className='pr-2 font-medium text-muted-foreground'>
                       Word
                     </th>
-                    <th className="font-medium text-muted-foreground">
+                    <th className='font-medium text-muted-foreground'>
                       Result
                     </th>
                   </tr>
@@ -324,7 +351,7 @@ function PracticeScreen({ userId }: { userId: string }) {
                     const word = words?.find((w) => w.id === id);
                     return (
                       <tr key={id}>
-                        <td className="pr-2">{word?.text ?? id}</td>
+                        <td className='pr-2'>{word?.text ?? id}</td>
                         <td>{session.flagged[id]}</td>
                       </tr>
                     );
@@ -334,20 +361,24 @@ function PracticeScreen({ userId }: { userId: string }) {
             </div>
           ) : (
             <>
-              <div className="flex flex-1 w-full items-center justify-center">
+              <div className='flex flex-1 w-full items-center justify-center'>
                 {session?.current && !revealed && (
-                  <Button
-                    onClick={handlePlay}
-                    disabled={!session?.current || revealed}
-                    size="lg"
-                    className="h-24 w-24 rounded-full text-base tablet:h-32 tablet:w-32 desktop:h-40 desktop:w-40"
-                  >
-                    Play
-                  </Button>
+                  <div className='relative flex h-36 w-36 items-center justify-center tablet:h-48 tablet:w-48 desktop:h-60 desktop:w-60'>
+                    <SpeechEqualizer amplitudes={amplitude} />
+                    <SpeechEqualizer amplitudes={amplitude} />
+                    <Button
+                      onClick={handlePlay}
+                      disabled={!session?.current || revealed}
+                      size='lg'
+                      className='relative z-10 h-24 w-24 rounded-full text-base tablet:h-32 tablet:w-32 desktop:h-40 desktop:w-40'
+                    >
+                      Play
+                    </Button>
+                  </div>
                 )}
                 {session?.current && revealed && (
                   <p
-                    className="text-center font-black break-words"
+                    className='text-center font-black break-words'
                     style={{
                       fontSize: "clamp(2.5rem, 6vw + 1rem, 9rem)",
                       lineHeight: 1.05,
@@ -358,32 +389,32 @@ function PracticeScreen({ userId }: { userId: string }) {
                 )}
               </div>
 
-              <div className="flex w-full max-w-xl flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Speed</span>
+              <div className='flex w-full max-w-xl flex-col gap-2'>
+                <div className='flex items-center gap-2'>
+                  <span className='text-sm text-muted-foreground'>Speed</span>
                   <Slider
                     value={[rate]}
                     min={0.1}
                     max={2.0}
                     step={0.05}
                     onValueChange={handleRateChange}
-                    className="flex-1"
+                    className='flex-1'
                   />
-                  <span className="w-10 text-right text-sm text-muted-foreground">
+                  <span className='w-10 text-right text-sm text-muted-foreground'>
                     {rate.toFixed(2)}x
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Stimme</span>
+                <div className='flex items-center gap-2'>
+                  <span className='text-sm text-muted-foreground'>Stimme</span>
                   <Select
                     value={selectedVoiceURI ?? "auto"}
                     onValueChange={handleVoiceChange}
                   >
-                    <SelectTrigger aria-label="Stimme" className="flex-1">
+                    <SelectTrigger aria-label='Stimme' className='flex-1'>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Automatisch</SelectItem>
+                      <SelectItem value='auto'>Automatisch</SelectItem>
                       {voices.map((voice) => (
                         <SelectItem key={voice.voiceURI} value={voice.voiceURI}>
                           {voice.name}
@@ -399,36 +430,36 @@ function PracticeScreen({ userId }: { userId: string }) {
 
         {!complete && (
           <div
-            role="group"
-            aria-label="Word actions"
-            className="flex w-full flex-wrap items-center justify-center gap-3 px-4 pb-8 tablet:px-8 desktop:px-12"
+            role='group'
+            aria-label='Word actions'
+            className='flex w-full flex-wrap items-center justify-center gap-3 px-4 pb-8 tablet:px-8 desktop:px-12'
           >
             <Button
               onClick={handleReveal}
               disabled={!session?.current || revealed}
-              variant="outline"
-              size="lg"
-              className="flex-1 max-w-xs"
+              variant='outline'
+              size='lg'
+              className='flex-1 max-w-xs'
             >
               Reveal
             </Button>
             <Button
               onClick={() => handleFlag(true)}
               disabled={!session?.current || !revealed}
-              variant="secondary"
-              size="lg"
-              className="flex-1 max-w-xs"
-              aria-label="correct"
+              variant='secondary'
+              size='lg'
+              className='flex-1 max-w-xs'
+              aria-label='correct'
             >
               👍 Correct
             </Button>
             <Button
               onClick={() => handleFlag(false)}
               disabled={!session?.current || !revealed}
-              variant="secondary"
-              size="lg"
-              className="flex-1 max-w-xs"
-              aria-label="incorrect"
+              variant='secondary'
+              size='lg'
+              className='flex-1 max-w-xs'
+              aria-label='incorrect'
             >
               👎 Incorrect
             </Button>
@@ -439,8 +470,8 @@ function PracticeScreen({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="container-editorial flex w-full flex-1 flex-col">
+    <div className='flex flex-1 flex-col'>
+      <div className='container-editorial flex w-full flex-1 flex-col'>
         {header}
         {body}
       </div>
@@ -469,8 +500,8 @@ export default function Home() {
 
   if (!userId) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Loading…</p>
+      <div className='flex flex-1 items-center justify-center'>
+        <p className='text-muted-foreground'>Loading…</p>
       </div>
     );
   }
