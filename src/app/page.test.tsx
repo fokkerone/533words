@@ -870,6 +870,31 @@ describe("Home practice screen", () => {
       expect(await screen.findByRole("button", { name: /^play$/i })).toBeInTheDocument();
     });
 
+    it("does not change the badge when the flag write fails", async () => {
+      mutateAsync.mockRejectedValue(new Error("write failed"));
+      mockedUseUserStars.mockReturnValue({
+        data: 5,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("5")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+
+      await screen.findByRole("alert");
+
+      // No optimistic update: the badge still shows the last known total,
+      // never a stale-but-changed value, since useUserStars was never
+      // invalidated (the flag write never succeeded).
+      expect(within(screen.getByRole("banner")).getByText("5")).toBeInTheDocument();
+    });
+
     it("updates the badge after a successful flag when the mocked total changes, without a full reload", async () => {
       setupUseWords(makeWords(2));
       const { rerenderHome } = renderHome();
