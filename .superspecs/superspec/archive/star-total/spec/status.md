@@ -1,7 +1,13 @@
 # Star Total (per-learner point total in the nav) — Status
 
 ## Phase
-3 — Verify ✅
+4 — Shipped ✅
+
+## Completed
+2026-09-24
+
+## PR
+None — no separate PR flow used in this repo; shipped via local `git merge --no-ff superspec/star-total` into `main`, consistent with every prior feature.
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -15,6 +21,8 @@
 - [x] All tests passing (185/185)
 - [x] Code review passed (no Critical findings)
 - [x] Wiki imported
+- [x] PR created (N/A — see PR note above)
+- [x] Archived
 
 ## Test Results
 - Suite: 185 passing, 0 failing, 0 skipped
@@ -26,12 +34,6 @@
 - [[data/word-bank-schema]] — updated: `fetchUserStarTotal`, the "compute on read, not a maintained cache table" decision
 - [[ui/session-state-pattern]] — updated: `useUserStars` header badge, an independent query rather than derived state
 - [[techstack/profile]] — updated: star-total shipped
-- [ ] Subagent execution complete
-- [ ] All tests passing
-- [ ] Code review passed (no Critical findings)
-- [ ] Wiki imported
-- [ ] PR created
-- [ ] Archived
 
 ## Slug
 star-total
