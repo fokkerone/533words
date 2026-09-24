@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useFlagWord, useWords } from "@/hooks/use-words";
+import { useFlagWord, useUserStars, useWords } from "@/hooks/use-words";
 import { useSession, signOut } from "@/lib/auth-client";
 import { getUserId } from "@/lib/session-user";
 import { listGermanVoices, speak } from "@/lib/speech";
@@ -65,6 +65,13 @@ function PracticeScreen({ userId }: { userId: string }) {
   const identity = authSession?.user.name || authSession?.user.email || "";
   const { data: words, isLoading, isError, error } = useWords(userId);
   const flagMutation = useFlagWord(userId);
+  const { data: starTotal, isLoading: starsLoading, isError: starsError } =
+    useUserStars(userId);
+  // Loading/error is shown as "0", the same grilled fallback the rest of
+  // the header uses (e.g. a concrete default session size) rather than a
+  // blank state -- never blocks the rest of the header's controls.
+  const displayedStarTotal =
+    starsLoading || starsError || starTotal === undefined ? 0 : starTotal;
 
   const [session, setSession] = useState<SessionState | null>(() =>
     restoreSession(userId),
@@ -275,6 +282,13 @@ function PracticeScreen({ userId }: { userId: string }) {
           New Session
         </Button>
         <div className='flex items-center gap-2 border-l border-border pl-2'>
+          <span
+            aria-label='Star total'
+            className='inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-sm font-semibold tabular-nums'
+          >
+            <span aria-hidden='true'>⭐</span>
+            {displayedStarTotal}
+          </span>
           {identity && (
             <span className='max-w-[10rem] truncate text-sm text-muted-foreground'>
               {identity}

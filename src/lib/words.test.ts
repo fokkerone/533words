@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjustScore, fetchWords, writeWordFlag } from "./words";
+import { adjustScore, fetchUserStarTotal, fetchWords, writeWordFlag } from "./words";
 
 type FakeArgs = Record<string, unknown> | unknown[];
 type FakeStatement = { sql: string; args?: FakeArgs };
@@ -77,6 +77,24 @@ function makeFakeClient(
       }
 
       return { rows: [], columns: [], rowsAffected: 0 };
+    },
+  };
+}
+
+/**
+ * Fake DB client for `fetchUserStarTotal` alone: models a `SELECT
+ * COALESCE(SUM(score), 0) AS total FROM user_word_scores WHERE user_id =
+ * :userId` query directly against a flat list of score rows, independent of
+ * the `words`-table-joining fake above.
+ */
+function makeStarTotalClient(scores: { userId: string; wordId: string; score: number }[]) {
+  return {
+    execute: async (stmt: FakeStatement) => {
+      const args = stmt.args as { userId?: string } | undefined;
+      const total = scores
+        .filter((s) => s.userId === args?.userId)
+        .reduce((sum, s) => sum + s.score, 0);
+      return { rows: [{ total }], columns: ["total"], rowsAffected: 0 };
     },
   };
 }
@@ -218,5 +236,41 @@ describe("writeWordFlag", () => {
     await expect(writeWordFlag(client, "learner-a", "missing", true)).rejects.toThrow(
       /no word found/
     );
+  });
+});
+
+describe("fetchUserStarTotal", () => {
+  it("returns the sum of a learner's scores, including a mix of positive and negative values", async () => {
+    const client = makeStarTotalClient([
+      { userId: "learner-a", wordId: "1", score: 3 },
+      { userId: "learner-a", wordId: "2", score: -1 },
+      { userId: "learner-a", wordId: "3", score: 2 },
+    ]);
+
+    const total = await fetchUserStarTotal(client, "learner-a");
+
+    expect(total).toBe(4);
+  });
+
+  it("returns exactly 0 (not null/NaN/undefined) for a learner with no score rows", async () => {
+    const client = makeStarTotalClient([]);
+
+    const total = await fetchUserStarTotal(client, "learner-a");
+
+    expect(total).toBe(0);
+    expect(total).not.toBeNaN();
+  });
+
+  it("never includes a different learner's rows in the total", async () => {
+    const client = makeStarTotalClient([
+      { userId: "learner-a", wordId: "1", score: 5 },
+      { userId: "learner-b", wordId: "1", score: 100 },
+    ]);
+
+    const totalA = await fetchUserStarTotal(client, "learner-a");
+    const totalB = await fetchUserStarTotal(client, "learner-b");
+
+    expect(totalA).toBe(5);
+    expect(totalB).toBe(100);
   });
 });

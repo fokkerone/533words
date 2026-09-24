@@ -1,7 +1,7 @@
 ---
 title: Wiki Home
 tags: [index, home]
-updated: 2026-09-17
+updated: 2026-09-24
 ---
 
 # Project Wiki
@@ -16,14 +16,16 @@ Knowledge base distilled from shipped features — architecture decisions, patte
 |--------|-------|-------------|
 | [[techstack/profile\|techstack]] | 1 | 2026-09-18 |
 | [[auth/Home\|auth]] | 1 | 2026-09-18 |
-| [[data/Home\|data]] | 1 | 2026-09-18 |
-| [[ui/Home\|ui]] | 2 | 2026-09-18 |
+| [[data/Home\|data]] | 1 | 2026-09-24 |
+| [[ui/Home\|ui]] | 2 | 2026-09-24 |
 | [[patterns/Home\|patterns]] | 4 | 2026-09-18 |
 
 ## Recent Updates
 
 _(last 10 — full history in [[log]])_
 
+- 2026-09-24: [[data/word-bank-schema]] — updated: `fetchUserStarTotal`, computed-on-read decision over a maintained cache table (star-total)
+- 2026-09-24: [[ui/session-state-pattern]] — updated: `useUserStars` header badge, an independent query rather than derived state (star-total)
 - 2026-09-18: [[auth/better-auth-setup]] — new: Better Auth + Turso/Kysely setup, cookie-gated routing, Google OAuth walkthrough (user-accounts)
 - 2026-09-18: [[patterns/per-user-scoped-storage]] — new: the localStorage/query-key per-learner scoping convention (user-accounts)
 - 2026-09-18: [[data/word-bank-schema]] — updated: `user_word_scores` per-learner table replaces global `words.score` (user-accounts)
@@ -32,8 +34,6 @@ _(last 10 — full history in [[log]])_
 - 2026-09-17: [[ui/design-tokens-theming]] — new: design tokens, fluid `clamp()` typography, Tailwind v4 breakpoint tiers, dark/light theme-toggle convention (editorial-redesign)
 - 2026-09-17: [[ui/session-state-pattern]] — updated: `advance()` auto-advance consumer pattern (editorial-redesign)
 - 2026-09-17: [[techstack/profile]] — updated: editorial-redesign shipped (Inter font, Exaggerated Minimalism style, Tailwind v4 breakpoints)
-- 2026-09-17: [[ui/session-state-pattern]] — updated: configurable session size, flag-order tracking, results-summary lookup pattern (session-size-summary)
-- 2026-09-17: [[patterns/web-speech-voice-selection]] — new: German voice selection, overlap prevention, and a real async-loading race found via manual browser testing
 
 ---
 

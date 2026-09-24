@@ -5,6 +5,14 @@
 **Context estimate:** ~10k / 200k ✅
 **Started:** 2026-09-24
 
+## Branch
+
+Branch name: `superspec/star-total`
+Type: branch
+Worktree path: N/A
+Created from: main @ eff328b
+Created: 2026-09-24
+
 ## Execution Strategy
 
 Wave execution order: Wave 1 → Wave 2

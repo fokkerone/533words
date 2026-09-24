@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useWords, WORDS_QUERY_KEY } from "./use-words";
-import { fetchWords } from "@/lib/words";
+import { useFlagWord, useUserStars, useWords, STAR_TOTAL_QUERY_KEY, WORDS_QUERY_KEY } from "./use-words";
+import { fetchUserStarTotal, fetchWords, writeWordFlag } from "@/lib/words";
 import { getDb } from "@/lib/db";
 
 vi.mock("@/lib/words", () => ({
   fetchWords: vi.fn(),
   writeWordFlag: vi.fn(),
+  fetchUserStarTotal: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -16,6 +17,8 @@ vi.mock("@/lib/db", () => ({
 }));
 
 const mockedFetchWords = vi.mocked(fetchWords);
+const mockedFetchUserStarTotal = vi.mocked(fetchUserStarTotal);
+const mockedWriteWordFlag = vi.mocked(writeWordFlag);
 
 /**
  * `useWords`'s cache-scoping guarantee (spec: "Word/Score Data Fetching Is
@@ -86,5 +89,86 @@ describe("useWords cache scoping", () => {
 
     expect(result.current.data).toEqual([{ id: "1", text: "Baum", score: 1 }]);
     expect(mockedFetchWords).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("useUserStars cache scoping", () => {
+  beforeEach(() => {
+    mockedFetchUserStarTotal.mockReset();
+  });
+
+  function wrapper(queryClient: QueryClient) {
+    return function Wrapper({ children }: { children: ReactNode }) {
+      return (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      );
+    };
+  }
+
+  it("includes the learner's ID in the query key, so two learners never share a cache entry", async () => {
+    const queryClient = new QueryClient();
+    mockedFetchUserStarTotal.mockImplementation(async (_client, userId: string) =>
+      userId === "learner-a" ? 7 : 2
+    );
+
+    const { result: resultA } = renderHook(() => useUserStars("learner-a"), {
+      wrapper: wrapper(queryClient),
+    });
+    await waitFor(() => expect(resultA.current.isSuccess).toBe(true));
+
+    const { result: resultB } = renderHook(() => useUserStars("learner-b"), {
+      wrapper: wrapper(queryClient),
+    });
+    await waitFor(() => expect(resultB.current.isSuccess).toBe(true));
+
+    expect(mockedFetchUserStarTotal).toHaveBeenCalledWith(getDb(), "learner-a");
+    expect(mockedFetchUserStarTotal).toHaveBeenCalledWith(getDb(), "learner-b");
+    expect(resultA.current.data).toBe(7);
+    expect(resultB.current.data).toBe(2);
+
+    const cacheKeys = queryClient
+      .getQueryCache()
+      .getAll()
+      .map((query) => query.queryKey);
+    expect(cacheKeys).toContainEqual([...STAR_TOTAL_QUERY_KEY, "learner-a"]);
+    expect(cacheKeys).toContainEqual([...STAR_TOTAL_QUERY_KEY, "learner-b"]);
+    expect(STAR_TOTAL_QUERY_KEY).not.toEqual(WORDS_QUERY_KEY);
+  });
+});
+
+describe("useFlagWord star-total invalidation", () => {
+  beforeEach(() => {
+    mockedWriteWordFlag.mockReset();
+    mockedFetchUserStarTotal.mockReset();
+  });
+
+  function wrapper(queryClient: QueryClient) {
+    return function Wrapper({ children }: { children: ReactNode }) {
+      return (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      );
+    };
+  }
+
+  it("invalidates the star-total query key for that learner on a successful flag", async () => {
+    const queryClient = new QueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    mockedWriteWordFlag.mockResolvedValue({ id: "1", text: "Baum", score: 1 });
+
+    const { result } = renderHook(() => useFlagWord("learner-a"), {
+      wrapper: wrapper(queryClient),
+    });
+
+    result.current.mutate({ wordId: "1", correct: true });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: [...STAR_TOTAL_QUERY_KEY, "learner-a"],
+    });
   });
 });
