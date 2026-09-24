@@ -70,3 +70,12 @@ Append-only activity log. Every ingest, query, and lint run appends an entry her
 - Test suite: 148/148 passing, 15/15 spec scenarios accounted for (13 automated, 2 explicitly manually-verified per GRILL.md's Google-OAuth-credential carve-out), no regressions
 - Notable: this is the project's first feature with any server-side code (Better Auth's route handler + Next.js proxy.ts middleware). Found and correctly resolved a genuine Next.js 16 file-convention deprecation (`middleware.ts` → `proxy.ts`) mid-execution; a scenario-coverage gap (Tanstack Query cache scoping) was found and closed during `/verify` itself.
 
+## [2026-09-24] ingest | star-total: per-learner point total in the nav
+
+- Created: (none — extended existing pages rather than adding new ones)
+- Updated: data/word-bank-schema.md (`fetchUserStarTotal`, computed-on-read decision over a maintained cache table), ui/session-state-pattern.md (`useUserStars` header badge as an independent query, not derived from `useWords`), Home.md
+- Domains touched: data, ui
+- Spec: `superspec/specs/star-total/spec.md`
+- Test suite: 185/185 passing, 7/7 spec scenarios covered, no regressions
+- Notable: the original request literally asked for a `user_id -> total` cross-table (a maintained cache), but this was explicitly talked out of during `/discuss` in favor of computing the sum on read (`SUM(score)` over `user_word_scores`) — no schema change needed, no drift risk. A scenario-coverage gap ("a failed flag does not change the badge") was found and closed during `/verify` itself, consistent with the pattern established across every prior feature in this project.
+
