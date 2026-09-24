@@ -87,3 +87,19 @@ export async function writeWordFlag(
 
   return { id: row.id, text: row.text, score: newScore };
 }
+
+/**
+ * Computes a learner's star total: the sum of their `score` across every
+ * `user_word_scores` row, scoped to that learner only. `COALESCE` is
+ * required because SQL `SUM` over zero matching rows returns `NULL`, not
+ * `0` -- a fresh account with no flagged words must report a total of 0,
+ * not null/NaN/undefined.
+ */
+export async function fetchUserStarTotal(client: DbClient, userId: string): Promise<number> {
+  const result = (await client.execute({
+    sql: `SELECT COALESCE(SUM(score), 0) AS total FROM user_word_scores WHERE user_id = :userId`,
+    args: { userId },
+  })) as { rows: { total: number }[] };
+
+  return result.rows[0]?.total ?? 0;
+}
