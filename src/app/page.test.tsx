@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Home from "./page";
-import { useWords, useFlagWord } from "@/hooks/use-words";
+import { useWords, useFlagWord, useUserStars } from "@/hooks/use-words";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { clearSession, saveSession } from "@/lib/session-storage";
@@ -18,6 +18,7 @@ const TEST_USER_ID = "test-user-id";
 vi.mock("@/hooks/use-words", () => ({
   useWords: vi.fn(),
   useFlagWord: vi.fn(),
+  useUserStars: vi.fn(),
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -57,6 +58,7 @@ vi.mock("@/lib/theme-settings", () => ({
 
 const mockedUseWords = vi.mocked(useWords);
 const mockedUseFlagWord = vi.mocked(useFlagWord);
+const mockedUseUserStars = vi.mocked(useUserStars);
 const mockedUseSession = vi.mocked(useSession);
 const mockedSignOut = vi.mocked(signOut);
 const mockedUseRouter = vi.mocked(useRouter);
@@ -94,11 +96,20 @@ function makeWords(count: number) {
 
 function renderHome() {
   const queryClient = new QueryClient();
-  return render(
+  const result = render(
     <QueryClientProvider client={queryClient}>
       <Home />
     </QueryClientProvider>
   );
+  return {
+    ...result,
+    rerenderHome: () =>
+      result.rerender(
+        <QueryClientProvider client={queryClient}>
+          <Home />
+        </QueryClientProvider>
+      ),
+  };
 }
 
 function setupUseWords(words: ReturnType<typeof makeWords>) {
@@ -151,6 +162,12 @@ describe("Home practice screen", () => {
     mockedSaveSessionSize.mockReset();
     mockedLoadTheme.mockReturnValue("light");
     mockedSaveTheme.mockReset();
+    mockedUseUserStars.mockReturnValue({
+      data: 0,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useUserStars>);
   });
 
   it("shows the Play control before reveal and the word text after reveal (mutually exclusive)", async () => {
@@ -770,6 +787,112 @@ describe("Home practice screen", () => {
       await waitFor(() => {
         expect(routerPush).toHaveBeenCalledWith("/login");
       });
+    });
+  });
+
+  describe("star badge", () => {
+    it("shows the learner's current star total in the header", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: 42,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("42")).toBeInTheDocument();
+    });
+
+    it("shows a negative star total as negative, not clamped or hidden", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: -3,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("-3")).toBeInTheDocument();
+      expect(within(header).queryByText("0")).not.toBeInTheDocument();
+    });
+
+    it("shows 0 for a fresh account with a total of 0, not blank", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: 0,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("0")).toBeInTheDocument();
+    });
+
+    it("shows 0 as a fallback while the star total is loading, without blocking the rest of the header", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("0")).toBeInTheDocument();
+      expect(within(header).getByRole("combobox", { name: /session size/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /theme|dark|light|dunkel|hell/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /new session/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /log ?out/i })).toBeInTheDocument();
+    });
+
+    it("shows 0 as a fallback when the star total fetch errors, without blocking the rest of the header", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: new Error("boom"),
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("0")).toBeInTheDocument();
+      expect(within(header).getByRole("combobox", { name: /session size/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /new session/i })).toBeInTheDocument();
+      fireEvent.click(within(header).getByRole("button", { name: /new session/i }));
+      expect(await screen.findByRole("button", { name: /^play$/i })).toBeInTheDocument();
+    });
+
+    it("updates the badge after a successful flag when the mocked total changes, without a full reload", async () => {
+      setupUseWords(makeWords(2));
+      const { rerenderHome } = renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("0")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+
+      await waitFor(() => {
+        expect(mutateAsync).toHaveBeenCalled();
+      });
+
+      mockedUseUserStars.mockReturnValue({
+        data: 1,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      rerenderHome();
+
+      expect(within(screen.getByRole("banner")).getByText("1")).toBeInTheDocument();
     });
   });
 
