@@ -50,6 +50,41 @@ export function listGermanVoices(): SpeechSynthesisVoice[] {
   }
 }
 
+/** How often `onTick` fires while an utterance is speaking, in milliseconds. */
+const TICK_INTERVAL_MS = 100;
+
+export type SpeakCallbacks = {
+  /**
+   * Fired once per spoken word (the browser's `boundary` event, filtered to
+   * `name === "word"` — sentence/other boundary kinds are ignored), with the
+   * exact substring of `text` being spoken at that moment. Best-effort only:
+   * confirmed via manual testing that some real voices — notably Chrome's
+   * "Google Deutsch", the voice this app prefers by default — never fire a
+   * single `boundary` event for an entire utterance, because network/cloud
+   * TTS voices generally don't return word-timing metadata to the browser.
+   * Prefer `onTick` for anything that must animate consistently across
+   * voices; use this only as an optional, best-effort refinement.
+   */
+  onBoundary?: (word: string) => void;
+  /**
+   * Fired on a fixed interval for the entire duration of the utterance —
+   * from the moment it actually starts (the `start` event) until it ends,
+   * errors, or is cancelled. Unlike `onBoundary`, this is driven purely by
+   * a timer, so it fires reliably regardless of whether the current voice
+   * reports word boundaries at all. This is the intended driver for a
+   * continuous "is speaking" visualization (e.g. the equalizer in
+   * `src/lib/speech-equalizer.ts`) that must work for every voice.
+   */
+  onTick?: () => void;
+  /**
+   * Fired when the utterance finishes, is cancelled, or errors — callers
+   * that started some visual "is speaking" state (e.g. the equalizer) must
+   * reset it here so it can never get stuck mid-animation if speech fails.
+   * Also where the `onTick` interval (if any) is torn down.
+   */
+  onEnd?: () => void;
+};
+
 /**
  * Speaks the given text aloud using the browser's Speech Synthesis API, if
  * available. Safe no-op when the API is unavailable or unusable on the
@@ -68,11 +103,19 @@ export function listGermanVoices(): SpeechSynthesisVoice[] {
  * populate the voice list asynchronously after startup — no `voiceschanged`
  * listener is needed here, since the next `speak()` call simply sees the
  * now-populated list.
+ *
+ * `callbacks` is optional and purely additive (backward compatible with
+ * every existing call site) — see `SpeakCallbacks` for what each one is
+ * for. `onboundary`/`onend`/`onerror` support and exact word-boundary
+ * granularity vary by browser/voice; a caller relying on `onBoundary` for
+ * anything beyond a decorative visual should degrade gracefully if it never
+ * fires.
  */
 export function speak(
   text: string,
   rate: number,
   voiceURI?: string | null,
+  callbacks?: SpeakCallbacks,
 ): void {
   try {
     if (
@@ -95,6 +138,45 @@ export function speak(
     const voice = requestedVoice ?? selectGermanVoice(voices ?? []);
     if (voice) {
       utterance.voice = voice;
+    }
+
+    if (callbacks?.onBoundary) {
+      utterance.onboundary = (event) => {
+        if (event.name !== "word") {
+          return;
+        }
+        const word = text.slice(
+          event.charIndex,
+          event.charIndex + (event.charLength ?? 0),
+        );
+        callbacks.onBoundary?.(word);
+      };
+    }
+
+    let tickIntervalId: ReturnType<typeof setInterval> | undefined;
+    const stopTicking = () => {
+      if (tickIntervalId !== undefined) {
+        clearInterval(tickIntervalId);
+        tickIntervalId = undefined;
+      }
+    };
+    if (callbacks?.onTick) {
+      utterance.onstart = () => {
+        tickIntervalId = setInterval(
+          () => callbacks.onTick?.(),
+          TICK_INTERVAL_MS,
+        );
+      };
+    }
+    if (callbacks?.onEnd || callbacks?.onTick) {
+      utterance.onend = () => {
+        stopTicking();
+        callbacks.onEnd?.();
+      };
+      utterance.onerror = () => {
+        stopTicking();
+        callbacks.onEnd?.();
+      };
     }
 
     synth.cancel();
