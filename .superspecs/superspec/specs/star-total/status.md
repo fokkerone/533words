@@ -1,7 +1,7 @@
 # Star Total (per-learner point total in the nav) — Status
 
 ## Phase
-2.2 — Execute › Branch ✅
+2.3–2.5 — Execute ✅ (all waves complete)
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -11,6 +11,9 @@
 - [x] Wiki conflicts: none
 - [x] Techstack conflicts: none
 - [x] Branch created (superspec/star-total)
+- [x] Subagent execution complete (Wave 1: task 1.1; Wave 2: task 2.1)
+- [x] All tests passing (184/184)
+- [x] Code review passed (no Critical findings)
 - [ ] Subagent execution complete
 - [ ] All tests passing
 - [ ] Code review passed (no Critical findings)

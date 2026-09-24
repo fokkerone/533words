@@ -18,4 +18,10 @@ Populated during execution — one entry per task review.
 ## Wave 2
 
 ### Task 2.1: Header star badge
-_Pending_
+**Stage 1 — Spec compliance:** PASS on every requirement. Badge shows the correct total, negative values displayed as-is (dedicated test asserting "-3" appears and "0" does not), fresh account shows "0" not blank, loading/error states fall back to "0" without blocking the rest of the header (New Session was actually clicked in the error-state test and confirmed still starts a session — a real functional check, not just a presence assertion), badge updates after a successful flag without reload.
+
+**Independently re-verified live in a real browser, not just trusting the test suite:** registered a real account via `/register`, confirmed the badge showed "⭐ 0" for the brand-new account, flagged a word correct, and watched the badge update to "⭐ 1" immediately with no reload — the exact end-to-end path the task's own "Done When" asked for manual verification of. The subagent had explicitly and honestly flagged that it could not perform this step (no test-account credentials available to it) rather than skipping the disclosure — correctly reported the gap instead of glossing over it, and I closed it directly since email+password registration works fine in this environment (no Google OAuth needed).
+
+**Stage 2 — Code quality:** PASS. Badge placed sensibly (identity block, before the name/email — matches the DISCUSS.md decision of "next to identity"), styled consistently with the header's existing muted/pill conventions, `tabular-nums` is a nice touch to prevent digit-width jitter as the value changes. `displayedStarTotal`'s fallback logic (`starsLoading || starsError || starTotal === undefined ? 0 : starTotal`) is a single, clear, correctly-scoped computation. Test suite updated the shared `beforeEach` with a sensible `useUserStars` default so none of the 39 pre-existing tests needed individual changes — good hygiene, avoids unnecessary diff noise.
+
+**Verdict:** ✅ Approved, no findings. Both the automated suite and a genuine live end-to-end browser check (registration → fresh-account 0 → flag → live update to 1) pass.
