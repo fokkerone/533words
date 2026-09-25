@@ -37,12 +37,11 @@ The system SHALL draw at least `ceil(sessionSize / 2)` words from the weak pool 
 - WHEN a session of size 24 is started
 - THEN at least 12 of the resulting session's words come from the weak pool
 
-#### Scenario: Weak pool smaller than the required minimum
-- GIVEN a word bank small enough that the weak pool has fewer words than `ceil(sessionSize / 2)` (not expected against the real 533-word bank, but must not break)
+#### Scenario: Small word bank — weak pool can't fill the minimum
+- GIVEN a word bank smaller than the configured session size (which also means its weak pool, being half the bank, is smaller than `ceil(sessionSize / 2)` — these two conditions are mathematically equivalent, since weak-pool size and the required minimum both grow monotonically with bank size and session size respectively)
 - WHEN a session is started
-- THEN every word in the weak pool is included
-- AND the remaining session slots are filled per "The Rest of the Session Is Filled From All Remaining Words" below
-- AND session creation SHALL NOT error or throw
+- THEN every word in the weak pool is included, and the remainder is filled per "The Rest of the Session Is Filled From All Remaining Words" below until every available word is used
+- AND the session contains every word in the bank, with no error or throw
 
 ### Requirement: The Rest of the Session Is Filled From All Remaining Words
 The system SHALL fill any session slots not already filled by the weak-pool minimum by drawing at random from all words not yet drawn into the session (weak or strong), until the session reaches `min(available words, sessionSize)` words.
@@ -52,12 +51,6 @@ The system SHALL fill any session slots not already filled by the weak-pool mini
 - WHEN a session is composed
 - THEN words from the weak pool MAY appear in the remainder draw too, so the session's total weak-pool proportion MAY exceed 50%
 - AND it SHALL NEVER fall below the minimum guaranteed by "A Session Draws At Least Half Its Words From the Weak Pool"
-
-#### Scenario: Small word bank draws everything available
-- GIVEN a word bank with fewer words than the configured session size
-- WHEN a session is started
-- THEN the session contains every available word, split as closely as possible to the weak/strong composition rules above
-- AND no error occurs
 
 ### Requirement: The Assembled Session List Is Shuffled Before Use
 The system SHALL randomly shuffle the combined list of weak-pool and remainder words before it becomes the session's word pool.
@@ -77,8 +70,7 @@ The system SHALL NOT include the same word more than once in a single session's 
 
 ## Error Behavior
 
-- The system SHALL NOT throw or error when the weak pool is smaller than the minimum required draw (see "Weak pool smaller than the required minimum").
-- The system SHALL NOT throw or error when the word bank itself has fewer words than the configured session size (existing behavior, unchanged, extended to the new selection logic).
+- The system SHALL NOT throw or error when the word bank has fewer words than the configured session size — this necessarily also means the weak pool is smaller than the minimum required draw, since weak-pool size and the required minimum both scale monotonically with bank size and session size respectively (they can only fall out of step when the bank itself is smaller than the session — see "Small word bank — weak pool can't fill the minimum").
 - The system SHALL NOT throw or error when every word shares an identical score (see "All words tied at the same score").
 
 ## Non-Functional Requirements

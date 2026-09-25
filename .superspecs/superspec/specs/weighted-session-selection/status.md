@@ -1,13 +1,15 @@
 # Weighted Session Selection — Status
 
 ## Phase
-1.2 — Plan › Spec ✅
+1.3 — Plan › Grill ✅
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
 - [x] Spec written
 - [x] Spec fits context window (~6k / 200k)
-- [ ] Spec grilled and stress-tested (GRILL.md)
+- [x] Spec grilled and stress-tested (GRILL.md)
+- [x] Wiki conflicts: none
+- [x] Techstack conflicts: none
 - [ ] Branch created
 - [ ] Subagent execution complete
 - [ ] All tests passing
