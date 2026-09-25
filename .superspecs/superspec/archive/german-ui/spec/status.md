@@ -1,7 +1,13 @@
 # German UI (localize all remaining English chrome) — Status
 
 ## Phase
-3 — Verify ✅
+4 — Shipped ✅
+
+## Completed
+2026-09-25
+
+## PR
+https://github.com/fokkerone/533words/pull/1
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -15,8 +21,8 @@
 - [x] All tests passing (190/190)
 - [x] Code review passed (no Critical findings)
 - [x] Wiki imported
-- [ ] PR created
-- [ ] Archived
+- [x] PR created
+- [x] Archived
 
 ## Slug
 german-ui
