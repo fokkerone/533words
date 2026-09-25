@@ -1,7 +1,7 @@
 # Weighted Session Selection — Status
 
 ## Phase
-2.3–2.5 — Execute ✅ (all waves complete)
+3 — Verify ✅
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -14,6 +14,18 @@
 - [x] Subagent execution complete (Wave 1: task 1.1)
 - [x] All tests passing (212/212)
 - [x] Code review passed (no Critical findings)
+- [x] Wiki imported
+- [ ] PR created
+- [ ] Archived
+
+## Test Results
+- Suite: 212 passing, 0 failing, 0 skipped
+- Spec scenarios: 8/8 covered
+- Regressions: none
+- Coverage gaps found and closed: none — every scenario had a passing test by the time execution finished, the first feature in this project where `/verify` found nothing missing
+
+## Wiki Pages
+- [[ui/session-state-pattern]] — updated with `startSession`'s weighted-draw decision and the testability pattern (deterministic split helper + statistical draw tests)
 - [ ] Subagent execution complete
 - [ ] All tests passing
 - [ ] Code review passed (no Critical findings)
