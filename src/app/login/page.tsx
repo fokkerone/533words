@@ -11,7 +11,7 @@ import { signIn } from "@/lib/auth-client";
 // network/transport error) -- the spec requires the failure reason to
 // never be distinguishable from the outside, and this also means we never
 // render Better Auth's raw error message text.
-const GENERIC_LOGIN_ERROR = "Invalid email or password.";
+const GENERIC_LOGIN_ERROR = "E-Mail oder Passwort ungültig.";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,9 +53,9 @@ export default function LoginPage() {
 
   return (
     <AuthForm
-      title="Sign in"
-      submitLabel="Sign in"
-      pendingLabel="Signing in…"
+      title="Login"
+      submitLabel="Login"
+      pendingLabel="Login läuft…"
       error={error}
       isSubmitting={isSubmitting}
       isGoogleSubmitting={isGoogleSubmitting}
@@ -63,9 +63,9 @@ export default function LoginPage() {
       onGoogleClick={handleGoogleClick}
       footer={
         <>
-          Don&apos;t have an account?{" "}
+          Noch kein Konto?{" "}
           <Link href="/register" className="font-medium text-foreground underline underline-offset-4">
-            Create one
+            Jetzt erstellen
           </Link>
         </>
       }

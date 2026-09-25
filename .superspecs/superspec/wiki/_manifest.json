@@ -79,6 +79,12 @@
         "Home",
         "log"
       ]
+    },
+    {
+      "slug": "german-ui",
+      "ingested_at": "2026-09-25T00:00:00Z",
+      "pages_created": ["patterns/german-ui-text"],
+      "pages_updated": ["patterns/Home", "Home", "log"]
     }
   ]
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Slider } from "@/components/ui/slider";
@@ -236,7 +237,9 @@ function PracticeScreen({ userId }: { userId: string }) {
       saveSession<SessionState>(userId, next);
     } catch (err) {
       setFlagError(
-        err instanceof Error ? err.message : "Failed to save score.",
+        err instanceof Error
+          ? err.message
+          : "Fehler beim Speichern des Ergebnisses.",
       );
     }
   }
@@ -253,7 +256,7 @@ function PracticeScreen({ userId }: { userId: string }) {
           value={String(sessionSize)}
           onValueChange={handleSessionSizeChange}
         >
-          <SelectTrigger aria-label='Session size' className='w-[5.5rem]'>
+          <SelectTrigger aria-label='Sitzungsgröße' className='w-[5.5rem]'>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -269,21 +272,23 @@ function PracticeScreen({ userId }: { userId: string }) {
           variant='outline'
           size='sm'
           aria-label={
-            theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+            theme === "dark"
+              ? "Zu hellem Modus wechseln"
+              : "Zu dunklem Modus wechseln"
           }
         >
-          {theme === "dark" ? "Light" : "Dark"}
+          {theme === "dark" ? "Hell" : "Dunkel"}
         </Button>
         <Button
           onClick={() => startNewSession(sessionSize)}
           variant='secondary'
           size='sm'
         >
-          New Session
+          Neue Sitzung
         </Button>
         <div className='flex items-center gap-2 border-l border-border pl-2'>
           <span
-            aria-label='Star total'
+            aria-label='Sterne gesamt'
             className='inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-sm font-semibold tabular-nums'
           >
             <span aria-hidden='true'>⭐</span>
@@ -307,16 +312,16 @@ function PracticeScreen({ userId }: { userId: string }) {
   if (isLoading) {
     body = (
       <div className='flex flex-1 items-center justify-center'>
-        <p className='text-muted-foreground'>Loading word bank…</p>
+        <p className='text-muted-foreground'>Wortliste wird geladen…</p>
       </div>
     );
   } else if (isError) {
     body = (
       <div className='flex flex-1 items-center justify-center p-4'>
         <Alert variant='destructive' className='max-w-md'>
-          <AlertTitle>Failed to load word bank</AlertTitle>
+          <AlertTitle>Wortliste konnte nicht geladen werden</AlertTitle>
           <AlertDescription>
-            {error instanceof Error ? error.message : "Unknown error."}
+            {error instanceof Error ? error.message : "Unbekannter Fehler."}
           </AlertDescription>
         </Alert>
       </div>
@@ -325,10 +330,10 @@ function PracticeScreen({ userId }: { userId: string }) {
     body = (
       <div className='flex flex-1 items-center justify-center p-4'>
         <Alert className='max-w-md'>
-          <AlertTitle>Word bank is empty</AlertTitle>
+          <AlertTitle>Wortliste ist leer</AlertTitle>
           <AlertDescription>
-            There are no words to practice yet. Seed the word bank to start a
-            session.
+            Es gibt noch keine Wörter zum Üben. Wortliste befüllen, um eine
+            Sitzung zu starten.
           </AlertDescription>
         </Alert>
       </div>
@@ -339,7 +344,7 @@ function PracticeScreen({ userId }: { userId: string }) {
         <section className='flex flex-1 flex-col items-center justify-center gap-8 px-4 py-8 tablet:px-8 desktop:px-12'>
           {flagError && (
             <Alert variant='destructive' className='w-full max-w-2xl'>
-              <AlertTitle>Could not save score</AlertTitle>
+              <AlertTitle>Ergebnis konnte nicht gespeichert werden</AlertTitle>
               <AlertDescription>{flagError}</AlertDescription>
             </Alert>
           )}
@@ -347,16 +352,16 @@ function PracticeScreen({ userId }: { userId: string }) {
           {complete && session ? (
             <div className='flex w-full max-w-2xl flex-col items-center gap-4'>
               <p className='text-2xl font-black tablet:text-3xl'>
-                Session complete!
+                Sitzung abgeschlossen!
               </p>
               <table className='w-full text-left text-sm'>
                 <thead>
                   <tr>
                     <th className='pr-2 font-medium text-muted-foreground'>
-                      Word
+                      Wort
                     </th>
                     <th className='font-medium text-muted-foreground'>
-                      Result
+                      Ergebnis
                     </th>
                   </tr>
                 </thead>
@@ -384,9 +389,13 @@ function PracticeScreen({ userId }: { userId: string }) {
                       onClick={handlePlay}
                       disabled={!session?.current || revealed}
                       size='lg'
+                      aria-label='Abspielen'
                       className='relative z-10 h-24 w-24 rounded-full text-base tablet:h-32 tablet:w-32 desktop:h-40 desktop:w-40'
                     >
-                      Play
+                      <Play
+                        className='h-10 w-10 tablet:h-14 tablet:w-14 desktop:h-16 desktop:w-16'
+                        fill='currentColor'
+                      />
                     </Button>
                   </div>
                 )}
@@ -405,7 +414,7 @@ function PracticeScreen({ userId }: { userId: string }) {
 
               <div className='flex w-full max-w-xl flex-col gap-2'>
                 <div className='flex items-center gap-2'>
-                  <span className='text-sm text-muted-foreground'>Speed</span>
+                  <span className='text-sm text-muted-foreground'>Tempo</span>
                   <Slider
                     value={[rate]}
                     min={0.1}
@@ -445,7 +454,7 @@ function PracticeScreen({ userId }: { userId: string }) {
         {!complete && (
           <div
             role='group'
-            aria-label='Word actions'
+            aria-label='Wortaktionen'
             className='flex w-full flex-wrap items-center justify-center gap-3 px-4 pb-8 tablet:px-8 desktop:px-12'
           >
             <Button
@@ -455,7 +464,7 @@ function PracticeScreen({ userId }: { userId: string }) {
               size='lg'
               className='flex-1 max-w-xs'
             >
-              Reveal
+              Aufdecken
             </Button>
             <Button
               onClick={() => handleFlag(true)}
@@ -463,9 +472,9 @@ function PracticeScreen({ userId }: { userId: string }) {
               variant='secondary'
               size='lg'
               className='flex-1 max-w-xs'
-              aria-label='correct'
+              aria-label='Richtig'
             >
-              👍 Correct
+              👍 Richtig
             </Button>
             <Button
               onClick={() => handleFlag(false)}
@@ -473,9 +482,9 @@ function PracticeScreen({ userId }: { userId: string }) {
               variant='secondary'
               size='lg'
               className='flex-1 max-w-xs'
-              aria-label='incorrect'
+              aria-label='Falsch'
             >
-              👎 Incorrect
+              👎 Falsch
             </Button>
           </div>
         )}
@@ -515,7 +524,7 @@ export default function Home() {
   if (!userId) {
     return (
       <div className='flex flex-1 items-center justify-center'>
-        <p className='text-muted-foreground'>Loading…</p>
+        <p className='text-muted-foreground'>Wird geladen…</p>
       </div>
     );
   }

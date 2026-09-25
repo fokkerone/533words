@@ -56,7 +56,7 @@ export function AuthForm({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="email" className="text-sm font-medium">
-              Email
+              E-Mail
             </label>
             <input
               id="email"
@@ -72,7 +72,7 @@ export function AuthForm({
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="password" className="text-sm font-medium">
-              Password
+              Passwort
             </label>
             <input
               id="password"
@@ -104,7 +104,7 @@ export function AuthForm({
           disabled={isGoogleSubmitting}
           onClick={onGoogleClick}
         >
-          {isGoogleSubmitting ? "Connecting to Google…" : "Sign in with Google"}
+          {isGoogleSubmitting ? "Verbindung zu Google…" : "Login mit Google"}
         </Button>
 
         <div className="mt-6 text-center text-sm text-muted-foreground">

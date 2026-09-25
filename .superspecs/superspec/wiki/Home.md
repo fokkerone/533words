@@ -1,7 +1,7 @@
 ---
 title: Wiki Home
 tags: [index, home]
-updated: 2026-09-24
+updated: 2026-09-25
 ---
 
 # Project Wiki
@@ -18,12 +18,13 @@ Knowledge base distilled from shipped features — architecture decisions, patte
 | [[auth/Home\|auth]] | 1 | 2026-09-18 |
 | [[data/Home\|data]] | 1 | 2026-09-24 |
 | [[ui/Home\|ui]] | 2 | 2026-09-24 |
-| [[patterns/Home\|patterns]] | 4 | 2026-09-18 |
+| [[patterns/Home\|patterns]] | 5 | 2026-09-25 |
 
 ## Recent Updates
 
 _(last 10 — full history in [[log]])_
 
+- 2026-09-25: [[patterns/german-ui-text]] — new: German-UI localization convention — no i18n framework, Login/Logout exception, icon-over-translation, translated-heading/raw-detail error pattern (german-ui)
 - 2026-09-24: [[data/word-bank-schema]] — updated: `fetchUserStarTotal`, computed-on-read decision over a maintained cache table (star-total)
 - 2026-09-24: [[ui/session-state-pattern]] — updated: `useUserStars` header badge, an independent query rather than derived state (star-total)
 - 2026-09-18: [[auth/better-auth-setup]] — new: Better Auth + Turso/Kysely setup, cookie-gated routing, Google OAuth walkthrough (user-accounts)
@@ -33,7 +34,6 @@ _(last 10 — full history in [[log]])_
 - 2026-09-18: [[techstack/profile]] — updated: user-accounts shipped (Better Auth, first server-side surface)
 - 2026-09-17: [[ui/design-tokens-theming]] — new: design tokens, fluid `clamp()` typography, Tailwind v4 breakpoint tiers, dark/light theme-toggle convention (editorial-redesign)
 - 2026-09-17: [[ui/session-state-pattern]] — updated: `advance()` auto-advance consumer pattern (editorial-redesign)
-- 2026-09-17: [[techstack/profile]] — updated: editorial-redesign shipped (Inter font, Exaggerated Minimalism style, Tailwind v4 breakpoints)
 
 ---
 

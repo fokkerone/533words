@@ -6,12 +6,12 @@ import Link from "next/link";
 import { AuthForm } from "@/components/auth-form";
 import { signIn, signUp } from "@/lib/auth-client";
 
-const ALREADY_REGISTERED_ERROR = "An account with this email already exists.";
-const GENERIC_REGISTER_ERROR = "Something went wrong. Please try again.";
+const ALREADY_REGISTERED_ERROR = "Für diese E-Mail-Adresse existiert bereits ein Konto.";
+const GENERIC_REGISTER_ERROR = "Etwas ist schiefgelaufen. Bitte versuche es erneut.";
 // Reuses the same non-enumerating copy as the login page for the Google
 // button's failure path, since a social-sign-in failure here isn't a
 // "this email is taken" case in the same sense.
-const GENERIC_GOOGLE_ERROR = "Something went wrong. Please try again.";
+const GENERIC_GOOGLE_ERROR = "Etwas ist schiefgelaufen. Bitte versuche es erneut.";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -65,9 +65,9 @@ export default function RegisterPage() {
 
   return (
     <AuthForm
-      title="Create your account"
-      submitLabel="Create account"
-      pendingLabel="Creating account…"
+      title="Konto erstellen"
+      submitLabel="Konto erstellen"
+      pendingLabel="Konto wird erstellt…"
       error={error}
       isSubmitting={isSubmitting}
       isGoogleSubmitting={isGoogleSubmitting}
@@ -75,9 +75,9 @@ export default function RegisterPage() {
       onGoogleClick={handleGoogleClick}
       footer={
         <>
-          Already have an account?{" "}
+          Bereits ein Konto?{" "}
           <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
-            Sign in
+            Login
           </Link>
         </>
       }

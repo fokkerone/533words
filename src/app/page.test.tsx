@@ -174,27 +174,37 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    const playButton = await screen.findByRole("button", { name: /^play$/i });
+    const playButton = await screen.findByRole("button", { name: /^abspielen$/i });
     expect(playButton).toBeInTheDocument();
     expect(screen.queryByText(/^word\d$/)).not.toBeInTheDocument();
 
-    const revealButton = screen.getByRole("button", { name: /reveal/i });
+    const revealButton = screen.getByRole("button", { name: /aufdecken/i });
     fireEvent.click(revealButton);
 
     expect(await screen.findByText(/^word\d$/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^play$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^abspielen$/i })).not.toBeInTheDocument();
+  });
+
+  it("renders the Play control as an icon-only button with a German aria-label and no visible text", async () => {
+    setupUseWords(makeWords(2));
+    renderHome();
+
+    const playButton = await screen.findByRole("button", { name: /^abspielen$/i });
+    expect(playButton).toHaveAttribute("aria-label", "Abspielen");
+    expect(within(playButton).queryByText(/^play$/i)).not.toBeInTheDocument();
+    expect(playButton).not.toHaveTextContent(/play/i);
   });
 
   it("auto-advances to a new word and speaks it after flagging correct, with words remaining", async () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    await screen.findByRole("button", { name: /^abspielen$/i });
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
     const firstWordText = (await screen.findByText(/^word\d$/)).textContent;
 
     vi.mocked(speak).mockClear();
-    fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalledWith(
@@ -205,7 +215,7 @@ describe("Home practice screen", () => {
     // A new current word is presented automatically (Play control back, not
     // revealed) with no separate "next word" click.
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^play$/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^abspielen$/i })).toBeInTheDocument();
     });
     expect(screen.queryByText(firstWordText!)).not.toBeInTheDocument();
 
@@ -214,19 +224,19 @@ describe("Home practice screen", () => {
     });
 
     // The flag controls for the new (unrevealed) word are disabled again.
-    expect(screen.getByRole("button", { name: /^correct$/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /^incorrect$/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^richtig$/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^falsch$/i })).toBeDisabled();
   });
 
   it("auto-advances after flagging incorrect too", async () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    await screen.findByRole("button", { name: /^abspielen$/i });
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
     vi.mocked(speak).mockClear();
 
-    fireEvent.click(await screen.findByRole("button", { name: /^incorrect$/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^falsch$/i }));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalledWith(
@@ -242,17 +252,17 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(1));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    await screen.findByRole("button", { name: /^abspielen$/i });
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
     vi.mocked(speak).mockClear();
 
-    fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalledWith({ wordId: "w0", correct: true });
     });
 
-    expect(await screen.findByText(/session complete/i)).toBeInTheDocument();
+    expect(await screen.findByText(/abgeschlossen/i)).toBeInTheDocument();
     expect(speak).not.toHaveBeenCalled();
   });
 
@@ -261,20 +271,20 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    await screen.findByRole("button", { name: /^abspielen$/i });
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
     const currentWordText = (await screen.findByText(/^word\d$/)).textContent;
     vi.mocked(speak).mockClear();
 
-    const thumbsUp = await screen.findByRole("button", { name: /^correct$/i });
+    const thumbsUp = await screen.findByRole("button", { name: /^richtig$/i });
     fireEvent.click(thumbsUp);
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
 
     // word should still be actionable (not flagged, not advanced) - flag
     // buttons remain enabled so the learner can retry.
-    expect(screen.getByRole("button", { name: /^correct$/i })).not.toBeDisabled();
-    expect(screen.getByRole("button", { name: /^incorrect$/i })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: /^richtig$/i })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: /^falsch$/i })).not.toBeDisabled();
     expect(screen.getByText(currentWordText!)).toBeInTheDocument();
     expect(speak).not.toHaveBeenCalled();
   });
@@ -283,13 +293,13 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(1));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
+    await screen.findByRole("button", { name: /^abspielen$/i });
     expect(screen.queryByRole("button", { name: /next word/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
 
-    expect(await screen.findByText(/session complete/i)).toBeInTheDocument();
+    expect(await screen.findByText(/abgeschlossen/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /next word/i })).not.toBeInTheDocument();
   });
 
@@ -297,24 +307,24 @@ describe("Home practice screen", () => {
     setupUseWords([]);
     renderHome();
 
-    expect(await screen.findByText(/word bank is empty/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^play$/i })).not.toBeInTheDocument();
+    expect(await screen.findByText(/wortliste ist leer/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^abspielen$/i })).not.toBeInTheDocument();
   });
 
   it("discards the in-progress session without confirmation when New Session is pressed", async () => {
     setupUseWords(makeWords(5));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    await screen.findByRole("button", { name: /^abspielen$/i });
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
     expect(await screen.findByText(/^word\d$/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /new session/i }));
+    fireEvent.click(screen.getByRole("button", { name: /neue sitzung/i }));
 
     // No confirmation dialog; the prior in-progress word is discarded and a
     // fresh session starts immediately with a new, unrevealed current word.
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^play$/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^abspielen$/i })).toBeInTheDocument();
     });
   });
 
@@ -332,9 +342,9 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+    await screen.findByRole("button", { name: /^abspielen$/i });
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
 
     await waitFor(() => {
       const flagWriteIndex = callOrder.lastIndexOf("db-write");
@@ -358,10 +368,10 @@ describe("Home practice screen", () => {
 
     // The restored word is immediately current (Play shown, Reveal enabled)
     // rather than a fresh session being auto-started.
-    expect(await screen.findByRole("button", { name: /reveal/i })).not.toBeDisabled();
-    expect(screen.getByRole("button", { name: /^play$/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /aufdecken/i })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: /^abspielen$/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
     expect(await screen.findByText(currentWordText)).toBeInTheDocument();
   });
 
@@ -390,7 +400,7 @@ describe("Home practice screen", () => {
     expect(newRate).not.toBe(1.0);
 
     vi.mocked(speak).mockClear();
-    fireEvent.click(await screen.findByRole("button", { name: /^play$/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^abspielen$/i }));
 
     await waitFor(() => {
       expect(speak).toHaveBeenCalledWith(expect.any(String), newRate, null, expect.anything());
@@ -402,10 +412,10 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
+    await screen.findByRole("button", { name: /^abspielen$/i });
     vi.mocked(speak).mockClear();
 
-    const playButton = screen.getByRole("button", { name: /^play$/i });
+    const playButton = screen.getByRole("button", { name: /^abspielen$/i });
     expect(playButton).not.toBeDisabled();
     fireEvent.click(playButton);
 
@@ -418,7 +428,7 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    const playButton = await screen.findByRole("button", { name: /^play$/i });
+    const playButton = await screen.findByRole("button", { name: /^abspielen$/i });
     vi.mocked(speak).mockClear();
 
     expect(() => {
@@ -437,15 +447,15 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    await screen.findByRole("button", { name: /^abspielen$/i });
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
 
     await waitFor(() => {
-      expect(screen.queryByRole("button", { name: /^play$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^abspielen$/i })).not.toBeInTheDocument();
     });
 
     vi.mocked(speak).mockClear();
-    expect(screen.queryByRole("button", { name: /^play$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^abspielen$/i })).not.toBeInTheDocument();
     expect(speak).not.toHaveBeenCalled();
   });
 
@@ -490,7 +500,7 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
+    await screen.findByRole("button", { name: /^abspielen$/i });
     const combobox = await screen.findByRole("combobox", { name: /stimme|voice/i });
     fireEvent.click(combobox);
     fireEvent.click(await screen.findByRole("option", { name: "Anna" }));
@@ -500,7 +510,7 @@ describe("Home practice screen", () => {
     });
 
     vi.mocked(speak).mockClear();
-    fireEvent.click(screen.getByRole("button", { name: /^play$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^abspielen$/i }));
 
     await waitFor(() => {
       expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, "anna-uri", expect.anything());
@@ -514,7 +524,7 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
+    await screen.findByRole("button", { name: /^abspielen$/i });
     const combobox = await screen.findByRole("combobox", { name: /stimme|voice/i });
     fireEvent.click(combobox);
     fireEvent.click(await screen.findByRole("option", { name: /automat/i }));
@@ -524,7 +534,7 @@ describe("Home practice screen", () => {
     });
 
     vi.mocked(speak).mockClear();
-    fireEvent.click(screen.getByRole("button", { name: /^play$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^abspielen$/i }));
 
     await waitFor(() => {
       expect(speak).toHaveBeenCalledWith(expect.any(String), 1.0, null, expect.anything());
@@ -599,18 +609,18 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(5));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    await screen.findByRole("button", { name: /^abspielen$/i });
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
     expect(await screen.findByText(/^word\d$/)).toBeInTheDocument();
 
     const sizeCombobox = await screen.findByRole("combobox", {
-      name: /session size/i,
+      name: /sitzungsgröße/i,
     });
     fireEvent.click(sizeCombobox);
     fireEvent.click(await screen.findByRole("option", { name: "8" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^play$/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^abspielen$/i })).toBeInTheDocument();
     });
   });
 
@@ -620,7 +630,7 @@ describe("Home practice screen", () => {
     renderHome();
 
     const sizeCombobox = await screen.findByRole("combobox", {
-      name: /session size/i,
+      name: /sitzungsgröße/i,
     });
     fireEvent.click(sizeCombobox);
     fireEvent.click(await screen.findByRole("option", { name: "16" }));
@@ -635,31 +645,31 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(2));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    await screen.findByRole("button", { name: /^abspielen$/i });
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
     const firstWordText = (
       await screen.findByText(/^word\d$/)
     ).textContent;
-    fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalledTimes(1);
     });
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^play$/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^abspielen$/i })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
     const secondWordText = (
       await screen.findByText(/^word\d$/)
     ).textContent;
-    fireEvent.click(await screen.findByRole("button", { name: /^incorrect$/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^falsch$/i }));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalledTimes(2);
     });
 
-    expect(await screen.findByText(/session complete/i)).toBeInTheDocument();
+    expect(await screen.findByText(/abgeschlossen/i)).toBeInTheDocument();
 
     const table = screen.getByRole("table");
     const rows = within(table).getAllByRole("row");
@@ -674,9 +684,9 @@ describe("Home practice screen", () => {
     setupUseWords(makeWords(1));
     renderHome();
 
-    await screen.findByRole("button", { name: /^play$/i });
-    fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+    await screen.findByRole("button", { name: /^abspielen$/i });
+    fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalledTimes(1);
@@ -684,7 +694,7 @@ describe("Home practice screen", () => {
 
     expect(await screen.findByRole("table")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /new session/i }));
+    fireEvent.click(screen.getByRole("button", { name: /neue sitzung/i }));
 
     await waitFor(() => {
       expect(screen.queryByRole("table")).not.toBeInTheDocument();
@@ -706,7 +716,7 @@ describe("Home practice screen", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     // A fresh session auto-starts (same 1-word bank), with a current word
     // ready to play/reveal, rather than "press next word to begin".
-    expect(await screen.findByRole("button", { name: /^play$/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /^abspielen$/i })).toBeInTheDocument();
   });
 
   describe("header region", () => {
@@ -716,36 +726,36 @@ describe("Home practice screen", () => {
 
       const header = await screen.findByRole("banner");
       expect(within(header).getByText(/533words/i)).toBeInTheDocument();
-      expect(within(header).getByRole("combobox", { name: /session size/i })).toBeInTheDocument();
-      expect(within(header).getByRole("button", { name: /theme|dark|light|dunkel|hell/i })).toBeInTheDocument();
-      expect(within(header).getByRole("button", { name: /new session/i })).toBeInTheDocument();
+      expect(within(header).getByRole("combobox", { name: /sitzungsgröße/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /zu (hellem|dunklem) modus wechseln/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /neue sitzung/i })).toBeInTheDocument();
     });
 
     it("shows brand, session-size selector, theme toggle, and New Session together during an active session", async () => {
       setupUseWords(makeWords(2));
       renderHome();
-      await screen.findByRole("button", { name: /^play$/i });
+      await screen.findByRole("button", { name: /^abspielen$/i });
 
       const header = screen.getByRole("banner");
       expect(within(header).getByText(/533words/i)).toBeInTheDocument();
-      expect(within(header).getByRole("combobox", { name: /session size/i })).toBeInTheDocument();
-      expect(within(header).getByRole("button", { name: /theme|dark|light|dunkel|hell/i })).toBeInTheDocument();
-      expect(within(header).getByRole("button", { name: /new session/i })).toBeInTheDocument();
+      expect(within(header).getByRole("combobox", { name: /sitzungsgröße/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /zu (hellem|dunklem) modus wechseln/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /neue sitzung/i })).toBeInTheDocument();
     });
 
     it("shows brand, session-size selector, theme toggle, and New Session together when the session is complete", async () => {
       setupUseWords(makeWords(1));
       renderHome();
-      await screen.findByRole("button", { name: /^play$/i });
-      fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
-      fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
-      await screen.findByText(/session complete/i);
+      await screen.findByRole("button", { name: /^abspielen$/i });
+      fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
+      await screen.findByText(/abgeschlossen/i);
 
       const header = screen.getByRole("banner");
       expect(within(header).getByText(/533words/i)).toBeInTheDocument();
-      expect(within(header).getByRole("combobox", { name: /session size/i })).toBeInTheDocument();
-      expect(within(header).getByRole("button", { name: /theme|dark|light|dunkel|hell/i })).toBeInTheDocument();
-      expect(within(header).getByRole("button", { name: /new session/i })).toBeInTheDocument();
+      expect(within(header).getByRole("combobox", { name: /sitzungsgröße/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /zu (hellem|dunklem) modus wechseln/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /neue sitzung/i })).toBeInTheDocument();
     });
   });
 
@@ -846,9 +856,9 @@ describe("Home practice screen", () => {
 
       const header = await screen.findByRole("banner");
       expect(within(header).getByText("0")).toBeInTheDocument();
-      expect(within(header).getByRole("combobox", { name: /session size/i })).toBeInTheDocument();
-      expect(within(header).getByRole("button", { name: /theme|dark|light|dunkel|hell/i })).toBeInTheDocument();
-      expect(within(header).getByRole("button", { name: /new session/i })).toBeInTheDocument();
+      expect(within(header).getByRole("combobox", { name: /sitzungsgröße/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /zu (hellem|dunklem) modus wechseln/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /neue sitzung/i })).toBeInTheDocument();
       expect(within(header).getByRole("button", { name: /log ?out/i })).toBeInTheDocument();
     });
 
@@ -864,10 +874,10 @@ describe("Home practice screen", () => {
 
       const header = await screen.findByRole("banner");
       expect(within(header).getByText("0")).toBeInTheDocument();
-      expect(within(header).getByRole("combobox", { name: /session size/i })).toBeInTheDocument();
-      expect(within(header).getByRole("button", { name: /new session/i })).toBeInTheDocument();
-      fireEvent.click(within(header).getByRole("button", { name: /new session/i }));
-      expect(await screen.findByRole("button", { name: /^play$/i })).toBeInTheDocument();
+      expect(within(header).getByRole("combobox", { name: /sitzungsgröße/i })).toBeInTheDocument();
+      expect(within(header).getByRole("button", { name: /neue sitzung/i })).toBeInTheDocument();
+      fireEvent.click(within(header).getByRole("button", { name: /neue sitzung/i }));
+      expect(await screen.findByRole("button", { name: /^abspielen$/i })).toBeInTheDocument();
     });
 
     it("does not change the badge when the flag write fails", async () => {
@@ -884,8 +894,8 @@ describe("Home practice screen", () => {
       const header = await screen.findByRole("banner");
       expect(within(header).getByText("5")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
-      fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+      fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
 
       await screen.findByRole("alert");
 
@@ -902,8 +912,8 @@ describe("Home practice screen", () => {
       const header = await screen.findByRole("banner");
       expect(within(header).getByText("0")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole("button", { name: /reveal/i }));
-      fireEvent.click(await screen.findByRole("button", { name: /^correct$/i }));
+      fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
 
       await waitFor(() => {
         expect(mutateAsync).toHaveBeenCalled();
@@ -925,16 +935,39 @@ describe("Home practice screen", () => {
     it("groups the reveal action and both flag actions together for an active, incomplete session", async () => {
       setupUseWords(makeWords(2));
       renderHome();
-      await screen.findByRole("button", { name: /^play$/i });
+      await screen.findByRole("button", { name: /^abspielen$/i });
 
-      const group = screen.getByRole("group", { name: /word actions|wortaktionen/i });
-      expect(within(group).getByRole("button", { name: /reveal/i })).toBeInTheDocument();
-      expect(within(group).getByRole("button", { name: /^correct$/i })).toBeInTheDocument();
-      expect(within(group).getByRole("button", { name: /^incorrect$/i })).toBeInTheDocument();
+      const group = screen.getByRole("group", { name: /wortaktionen/i });
+      expect(within(group).getByRole("button", { name: /aufdecken/i })).toBeInTheDocument();
+      expect(within(group).getByRole("button", { name: /^richtig$/i })).toBeInTheDocument();
+      expect(within(group).getByRole("button", { name: /^falsch$/i })).toBeInTheDocument();
     });
   });
 
   describe("theme toggle", () => {
+    it("shows German visible text ('Dunkel' when light, 'Hell' when dark), matching its current state", async () => {
+      mockedLoadTheme.mockReturnValue("light");
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      const toggle = within(header).getByRole("button", {
+        name: /zu (hellem|dunklem) modus wechseln/i,
+      });
+      expect(toggle).toHaveTextContent("Dunkel");
+
+      fireEvent.click(toggle);
+
+      await waitFor(() => {
+        expect(document.documentElement.classList.contains("dark")).toBe(true);
+      });
+      expect(
+        within(screen.getByRole("banner")).getByRole("button", {
+          name: /zu (hellem|dunklem) modus wechseln/i,
+        }),
+      ).toHaveTextContent("Hell");
+    });
+
     it("reflects a persisted dark theme on mount by applying the dark class to <html>", async () => {
       mockedLoadTheme.mockReturnValue("dark");
       setupUseWords(makeWords(2));
@@ -950,7 +983,7 @@ describe("Home practice screen", () => {
       setupUseWords(makeWords(2));
       renderHome();
 
-      await screen.findByRole("button", { name: /^play$/i });
+      await screen.findByRole("button", { name: /^abspielen$/i });
       expect(document.documentElement.classList.contains("dark")).toBe(false);
     });
 
@@ -960,7 +993,7 @@ describe("Home practice screen", () => {
       renderHome();
 
       const header = await screen.findByRole("banner");
-      const toggle = within(header).getByRole("button", { name: /theme|dark|light|dunkel|hell/i });
+      const toggle = within(header).getByRole("button", { name: /zu (hellem|dunklem) modus wechseln/i });
 
       fireEvent.click(toggle);
 
