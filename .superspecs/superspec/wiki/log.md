@@ -88,3 +88,12 @@ Append-only activity log. Every ingest, query, and lint run appends an entry her
 - Test suite: 190/190 passing, 14/14 spec scenarios accounted for (13 automated, 1 explicitly manually-verified by the user per GRILL.md's scoping decision — "no untranslated English text remains" is a visual completeness check, not automatable), no regressions
 - Notable: three scenario-coverage gaps (theme-toggle visible German text, login page title, register page title + login cross-link) were found and closed during `/verify` itself — in every case the underlying implementation was already correct, consistent with the pattern established across every prior feature in this project. The "Reveal" translation was corrected from an initially-proposed "Wort einblenden" (15 chars, mobile layout-overflow risk) to the user's own shorter "Aufdecken" (9 chars) during `/grill`.
 
+## [2026-09-25] ingest | star-progress-display: rescaled star badge, goal-distance message, session-progress indicator
+
+- Created: (none — extended existing pages rather than adding new ones)
+- Updated: ui/session-state-pattern.md (goal-distance message's loading/error-hiding and tablet-breakpoint-hiding rules, session-progress indicator derivation), data/word-bank-schema.md (star total is not bounded below zero — a real, reachable negative state), Home.md
+- Domains touched: ui, data
+- Spec: `superspec/specs/star-progress-display/spec.md`
+- Test suite: 205/205 passing, 18/18 spec scenarios covered, no regressions
+- Notable: two scenario-coverage gaps were found and closed during this project's now-standard `/verify` pass — one during Task 1.1's own code review (the goal-distance sentence's own recalculation wasn't separately asserted, only the star badge's), one during `/verify` itself (the tablet-breakpoint-hiding CSS class had no test, verified via `toHaveClass` since jsdom can't evaluate real media queries). Separately, this feature's branch was created from a `main` that predated the still-open german-ui PR, so it initially executed against untranslated English UI text — caught and fixed by rebasing onto `superspec/german-ui` mid-execution, and documented as a new branching convention in `CLAUDE.md` (branch from the latest merged state, or from a still-open prior feature's branch if its PR hasn't landed yet).
+
