@@ -34,3 +34,5 @@ Branch name: `superspec/star-progress-display`
 Type: branch
 Created from: `main` @ dae8e28 (rebased onto main @ 57bdb6b to pick up the protected-`main`/planning-docs-on-branch convention)
 Created: 2026-09-25
+
+**Rebased a second time (2026-09-25, during Task 1.1) onto `superspec/german-ui`:** the branch was originally created from `main` before german-ui's PR (#1) had merged, so it was missing the entire German-UI translation of `page.tsx`/`page.test.tsx`/login/register/`auth-form.tsx`. Task 1.1's subagent correctly left the (then-current, still-English) `aria-label='Star total'` untouched per its instructions, which would have been a real regression once merged. Rebased onto `superspec/german-ui` to build on top of the translated code instead; resolved two merge conflicts in `page.test.tsx` (stale English assertions from Task 1.1 vs. correct German assertions from german-ui — kept the German assertions, combined with Task 1.1's new "0.0"/goal-message coverage). Full suite (195/195), lint, and build all verified clean after the rebase.
