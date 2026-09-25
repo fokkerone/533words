@@ -4,6 +4,7 @@ import {
   flagWord,
   isSessionComplete,
   pickNextWord,
+  splitByRelativeScore,
   startSession,
   type SessionState,
   type Word,
@@ -14,6 +15,15 @@ function makeWords(count: number): Word[] {
     id: `w${i}`,
     text: `word${i}`,
     score: 0,
+  }));
+}
+
+/** Words with distinct, ascending scores: w0 has the lowest score. */
+function makeScoredWords(count: number): Word[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `w${i}`,
+    text: `word${i}`,
+    score: i,
   }));
 }
 
@@ -69,6 +79,96 @@ describe("startSession", () => {
     const sessionIds = session.map((w) => w.id).sort();
     const wordIds = words.map((w) => w.id).sort();
     expect(sessionIds).toEqual(wordIds);
+  });
+
+  it("draws every word (weak + rest) with no error or duplicates when the bank is smaller than sessionSize", () => {
+    const words = makeScoredWords(10);
+    const session = startSession(words, 24);
+    expect(session).toHaveLength(10);
+    const ids = session.map((w) => w.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.sort()).toEqual(words.map((w) => w.id).sort());
+  });
+
+  it("draws at least the weak-pool minimum (>=12 of 24) from the bottom half of scores, across many draws", () => {
+    const words = makeScoredWords(533);
+    const { weak } = splitByRelativeScore(words);
+    const weakIds = new Set(weak.map((w) => w.id));
+    const weakPoolMinimum = Math.ceil(24 / 2);
+
+    for (let i = 0; i < 75; i++) {
+      const session = startSession(words, 24);
+      expect(session).toHaveLength(24);
+      const ids = session.map((w) => w.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      const weakCount = ids.filter((id) => weakIds.has(id)).length;
+      expect(weakCount).toBeGreaterThanOrEqual(weakPoolMinimum);
+    }
+  });
+
+  it("does not throw and returns a valid session when every word shares the same score", () => {
+    const words = makeWords(100); // all score: 0
+    for (let i = 0; i < 20; i++) {
+      const session = startSession(words, 24);
+      expect(session).toHaveLength(24);
+      const ids = session.map((w) => w.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it("shuffles the combined weak/rest draw so the two groups are not always laid out as two contiguous blocks", () => {
+    const words = makeScoredWords(533);
+    const { weak } = splitByRelativeScore(words);
+    const weakIds = new Set(weak.map((w) => w.id));
+
+    let sawRestBeforeWeak = false;
+    for (let i = 0; i < 75 && !sawRestBeforeWeak; i++) {
+      const session = startSession(words, 24);
+      const firstWeakIndex = session.findIndex((w) => weakIds.has(w.id));
+      const firstRestIndex = session.findIndex((w) => !weakIds.has(w.id));
+      if (firstRestIndex !== -1 && firstWeakIndex !== -1 && firstRestIndex < firstWeakIndex) {
+        sawRestBeforeWeak = true;
+      }
+    }
+    expect(sawRestBeforeWeak).toBe(true);
+  });
+});
+
+describe("splitByRelativeScore", () => {
+  it("splits an even-sized, distinctly-scored bank exactly in half by score", () => {
+    const words = makeScoredWords(100);
+    const { weak, rest } = splitByRelativeScore(words);
+    expect(weak).toHaveLength(50);
+    expect(rest).toHaveLength(50);
+    const weakIds = weak.map((w) => w.id).sort();
+    const expectedWeakIds = words
+      .slice(0, 50)
+      .map((w) => w.id)
+      .sort();
+    expect(weakIds).toEqual(expectedWeakIds);
+    const restIds = rest.map((w) => w.id).sort();
+    const expectedRestIds = words
+      .slice(50)
+      .map((w) => w.id)
+      .sort();
+    expect(restIds).toEqual(expectedRestIds);
+  });
+
+  it("rounds the weak pool up on an odd-sized, distinctly-scored bank", () => {
+    const words = makeScoredWords(101);
+    const { weak, rest } = splitByRelativeScore(words);
+    expect(weak).toHaveLength(51);
+    expect(rest).toHaveLength(50);
+  });
+
+  it("still splits exactly in half (rounded up) when every word is tied at the same score", () => {
+    const words = makeWords(100); // all score: 0
+    const { weak, rest } = splitByRelativeScore(words);
+    expect(weak).toHaveLength(50);
+    expect(rest).toHaveLength(50);
+    // membership is unconstrained when tied, but every word must appear exactly once total
+    const allIds = [...weak, ...rest].map((w) => w.id).sort();
+    expect(allIds).toEqual(words.map((w) => w.id).sort());
   });
 });
 

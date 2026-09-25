@@ -20,13 +20,50 @@ export type SessionState = {
 };
 
 /**
+ * Splits the word bank into a "weak" pool (the lower half of the bank
+ * ranked by the learner's own score, ascending, rounded up on odd
+ * counts) and a "rest" pool (everything else). Relative to the current
+ * bank and learner — not a fixed score threshold. Pure and
+ * deterministic: no randomness, no mutation of the input array.
+ */
+export function splitByRelativeScore(words: Word[]): { weak: Word[]; rest: Word[] } {
+  const sorted = [...words].sort((a, b) => a.score - b.score);
+  const weakCount = Math.ceil(sorted.length / 2);
+  return { weak: sorted.slice(0, weakCount), rest: sorted.slice(weakCount) };
+}
+
+/** Draws `count` unique random words from `words` (no duplicates, no mutation). */
+function drawRandom(words: Word[], count: number): Word[] {
+  const shuffled = [...words].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
+/**
  * Draws up to sessionSize unique words from the given word list, in
  * shuffled order, with no word appearing more than once. If the word
  * list has fewer than sessionSize words, every word is used.
+ *
+ * At least ceil(sessionSize / 2) of the drawn words come from the
+ * "weak pool" (the learner's relatively lowest-scored half of the
+ * bank), provided the weak pool has enough words to fill that
+ * minimum. The remaining slots are drawn at random from all words not
+ * already drawn (weak or rest), and the combined result is shuffled.
  */
 export function startSession(words: Word[], sessionSize: number): Word[] {
-  const shuffled = [...words].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, sessionSize);
+  const { weak, rest } = splitByRelativeScore(words);
+  const weakPoolMinimum = Math.ceil(sessionSize / 2);
+
+  const weakDrawCount = Math.min(weak.length, weakPoolMinimum);
+  const weakDraw = drawRandom(weak, weakDrawCount);
+  const weakDrawIds = new Set(weakDraw.map((w) => w.id));
+
+  const remaining = [...weak.filter((w) => !weakDrawIds.has(w.id)), ...rest];
+  const targetTotal = Math.min(sessionSize, words.length);
+  const remainderCount = Math.max(0, targetTotal - weakDraw.length);
+  const remainderDraw = drawRandom(remaining, remainderCount);
+
+  const combined = [...weakDraw, ...remainderDraw];
+  return combined.sort(() => Math.random() - 0.5);
 }
 
 /** Builds a fresh session state from a word list, drawing up to sessionSize words. */
