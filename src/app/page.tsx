@@ -292,8 +292,15 @@ function PracticeScreen({ userId }: { userId: string }) {
             className='inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-sm font-semibold tabular-nums'
           >
             <span aria-hidden='true'>⭐</span>
-            {displayedStarTotal}
+            {(displayedStarTotal / 10).toFixed(1)}
           </span>
+          {!starsLoading && !starsError && starTotal !== undefined && (
+            <span className='hidden tablet:inline-flex text-sm text-muted-foreground'>
+              {starTotal / 10 >= 533
+                ? "Ziel erreicht! 🎉"
+                : `Du benötigst noch ${(533 - starTotal / 10).toFixed(1)} Sterne`}
+            </span>
+          )}
           {identity && (
             <span className='max-w-[10rem] truncate text-sm text-muted-foreground'>
               {identity}

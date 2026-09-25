@@ -801,9 +801,9 @@ describe("Home practice screen", () => {
   });
 
   describe("star badge", () => {
-    it("shows the learner's current star total in the header", async () => {
+    it("shows the learner's current star total rescaled to one decimal place", async () => {
       mockedUseUserStars.mockReturnValue({
-        data: 42,
+        data: 53,
         isLoading: false,
         isError: false,
         error: null,
@@ -812,12 +812,12 @@ describe("Home practice screen", () => {
       renderHome();
 
       const header = await screen.findByRole("banner");
-      expect(within(header).getByText("42")).toBeInTheDocument();
+      expect(within(header).getByText("5.3")).toBeInTheDocument();
     });
 
-    it("shows a negative star total as negative, not clamped or hidden", async () => {
+    it("shows a negative star total as negative and rescaled, not clamped or hidden", async () => {
       mockedUseUserStars.mockReturnValue({
-        data: -3,
+        data: -53,
         isLoading: false,
         isError: false,
         error: null,
@@ -826,11 +826,11 @@ describe("Home practice screen", () => {
       renderHome();
 
       const header = await screen.findByRole("banner");
-      expect(within(header).getByText("-3")).toBeInTheDocument();
-      expect(within(header).queryByText("0")).not.toBeInTheDocument();
+      expect(within(header).getByText("-5.3")).toBeInTheDocument();
+      expect(within(header).queryByText("0.0")).not.toBeInTheDocument();
     });
 
-    it("shows 0 for a fresh account with a total of 0, not blank", async () => {
+    it("shows 0.0 for a fresh account with a total of 0, not blank or bare 0", async () => {
       mockedUseUserStars.mockReturnValue({
         data: 0,
         isLoading: false,
@@ -841,10 +841,10 @@ describe("Home practice screen", () => {
       renderHome();
 
       const header = await screen.findByRole("banner");
-      expect(within(header).getByText("0")).toBeInTheDocument();
+      expect(within(header).getByText("0.0")).toBeInTheDocument();
     });
 
-    it("shows 0 as a fallback while the star total is loading, without blocking the rest of the header", async () => {
+    it("shows 0.0 as a fallback while the star total is loading, without blocking the rest of the header", async () => {
       mockedUseUserStars.mockReturnValue({
         data: undefined,
         isLoading: true,
@@ -855,14 +855,16 @@ describe("Home practice screen", () => {
       renderHome();
 
       const header = await screen.findByRole("banner");
-      expect(within(header).getByText("0")).toBeInTheDocument();
+      expect(within(header).getByText("0.0")).toBeInTheDocument();
       expect(within(header).getByRole("combobox", { name: /sitzungsgröße/i })).toBeInTheDocument();
       expect(within(header).getByRole("button", { name: /zu (hellem|dunklem) modus wechseln/i })).toBeInTheDocument();
       expect(within(header).getByRole("button", { name: /neue sitzung/i })).toBeInTheDocument();
       expect(within(header).getByRole("button", { name: /log ?out/i })).toBeInTheDocument();
+      expect(within(header).queryByText(/du benötigst noch/i)).not.toBeInTheDocument();
+      expect(within(header).queryByText(/ziel erreicht/i)).not.toBeInTheDocument();
     });
 
-    it("shows 0 as a fallback when the star total fetch errors, without blocking the rest of the header", async () => {
+    it("shows 0.0 as a fallback when the star total fetch errors, without blocking the rest of the header", async () => {
       mockedUseUserStars.mockReturnValue({
         data: undefined,
         isLoading: false,
@@ -873,9 +875,11 @@ describe("Home practice screen", () => {
       renderHome();
 
       const header = await screen.findByRole("banner");
-      expect(within(header).getByText("0")).toBeInTheDocument();
+      expect(within(header).getByText("0.0")).toBeInTheDocument();
       expect(within(header).getByRole("combobox", { name: /sitzungsgröße/i })).toBeInTheDocument();
       expect(within(header).getByRole("button", { name: /neue sitzung/i })).toBeInTheDocument();
+      expect(within(header).queryByText(/du benötigst noch/i)).not.toBeInTheDocument();
+      expect(within(header).queryByText(/ziel erreicht/i)).not.toBeInTheDocument();
       fireEvent.click(within(header).getByRole("button", { name: /neue sitzung/i }));
       expect(await screen.findByRole("button", { name: /^abspielen$/i })).toBeInTheDocument();
     });
@@ -883,7 +887,7 @@ describe("Home practice screen", () => {
     it("does not change the badge when the flag write fails", async () => {
       mutateAsync.mockRejectedValue(new Error("write failed"));
       mockedUseUserStars.mockReturnValue({
-        data: 5,
+        data: 50,
         isLoading: false,
         isError: false,
         error: null,
@@ -892,7 +896,7 @@ describe("Home practice screen", () => {
       renderHome();
 
       const header = await screen.findByRole("banner");
-      expect(within(header).getByText("5")).toBeInTheDocument();
+      expect(within(header).getByText("5.0")).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
       fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
@@ -902,7 +906,7 @@ describe("Home practice screen", () => {
       // No optimistic update: the badge still shows the last known total,
       // never a stale-but-changed value, since useUserStars was never
       // invalidated (the flag write never succeeded).
-      expect(within(screen.getByRole("banner")).getByText("5")).toBeInTheDocument();
+      expect(within(screen.getByRole("banner")).getByText("5.0")).toBeInTheDocument();
     });
 
     it("updates the badge after a successful flag when the mocked total changes, without a full reload", async () => {
@@ -910,7 +914,7 @@ describe("Home practice screen", () => {
       const { rerenderHome } = renderHome();
 
       const header = await screen.findByRole("banner");
-      expect(within(header).getByText("0")).toBeInTheDocument();
+      expect(within(header).getByText("0.0")).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
       fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
@@ -920,14 +924,94 @@ describe("Home practice screen", () => {
       });
 
       mockedUseUserStars.mockReturnValue({
-        data: 1,
+        data: 10,
         isLoading: false,
         isError: false,
         error: null,
       } as unknown as ReturnType<typeof useUserStars>);
       rerenderHome();
 
-      expect(within(screen.getByRole("banner")).getByText("1")).toBeInTheDocument();
+      expect(within(screen.getByRole("banner")).getByText("1.0")).toBeInTheDocument();
+    });
+  });
+
+  describe("goal-distance message", () => {
+    it("shows the distance to 533 when below the goal", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: 53,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(
+        within(header).getByText("Du benötigst noch 527.7 Sterne")
+      ).toBeInTheDocument();
+    });
+
+    it("shows the goal-reached message when the rescaled total exactly equals 533", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: 5330,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("Ziel erreicht! 🎉")).toBeInTheDocument();
+      expect(within(header).queryByText(/du benötigst noch/i)).not.toBeInTheDocument();
+    });
+
+    it("shows the goal-reached message when the rescaled total exceeds 533", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: 5400,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("Ziel erreicht! 🎉")).toBeInTheDocument();
+      expect(within(header).queryByText(/-\d/)).not.toBeInTheDocument();
+    });
+
+    it("hides the message entirely while the star total is loading", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("0.0")).toBeInTheDocument();
+      expect(within(header).queryByText(/du benötigst noch/i)).not.toBeInTheDocument();
+      expect(within(header).queryByText(/ziel erreicht/i)).not.toBeInTheDocument();
+    });
+
+    it("hides the message entirely when the star total failed to load", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: new Error("boom"),
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(within(header).getByText("0.0")).toBeInTheDocument();
+      expect(within(header).queryByText(/du benötigst noch/i)).not.toBeInTheDocument();
+      expect(within(header).queryByText(/ziel erreicht/i)).not.toBeInTheDocument();
     });
   });
 
