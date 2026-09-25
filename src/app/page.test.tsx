@@ -933,6 +933,37 @@ describe("Home practice screen", () => {
 
       expect(within(screen.getByRole("banner")).getByText("1.0")).toBeInTheDocument();
     });
+
+    it("recalculates the goal-distance message when the star total changes", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: 53,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      const { rerenderHome } = renderHome();
+
+      const header = await screen.findByRole("banner");
+      expect(
+        within(header).getByText("Du benötigst noch 527.7 Sterne")
+      ).toBeInTheDocument();
+
+      mockedUseUserStars.mockReturnValue({
+        data: 153,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      rerenderHome();
+
+      expect(
+        within(screen.getByRole("banner")).getByText("Du benötigst noch 517.7 Sterne")
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByRole("banner")).queryByText("Du benötigst noch 527.7 Sterne")
+      ).not.toBeInTheDocument();
+    });
   });
 
   describe("goal-distance message", () => {
