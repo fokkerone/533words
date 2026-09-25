@@ -945,6 +945,29 @@ describe("Home practice screen", () => {
   });
 
   describe("theme toggle", () => {
+    it("shows German visible text ('Dunkel' when light, 'Hell' when dark), matching its current state", async () => {
+      mockedLoadTheme.mockReturnValue("light");
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      const toggle = within(header).getByRole("button", {
+        name: /zu (hellem|dunklem) modus wechseln/i,
+      });
+      expect(toggle).toHaveTextContent("Dunkel");
+
+      fireEvent.click(toggle);
+
+      await waitFor(() => {
+        expect(document.documentElement.classList.contains("dark")).toBe(true);
+      });
+      expect(
+        within(screen.getByRole("banner")).getByRole("button", {
+          name: /zu (hellem|dunklem) modus wechseln/i,
+        }),
+      ).toHaveTextContent("Hell");
+    });
+
     it("reflects a persisted dark theme on mount by applying the dark class to <html>", async () => {
       mockedLoadTheme.mockReturnValue("dark");
       setupUseWords(makeWords(2));
