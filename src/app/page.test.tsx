@@ -983,6 +983,24 @@ describe("Home practice screen", () => {
       ).toBeInTheDocument();
     });
 
+    it("carries the tablet-breakpoint-hiding class, unlike the star badge which stays visible at all widths", async () => {
+      mockedUseUserStars.mockReturnValue({
+        data: 53,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserStars>);
+      setupUseWords(makeWords(2));
+      renderHome();
+
+      const header = await screen.findByRole("banner");
+      const message = within(header).getByText("Du benötigst noch 527.7 Sterne");
+      expect(message).toHaveClass("hidden", "tablet:inline-flex");
+
+      const starBadge = within(header).getByText("5.3");
+      expect(starBadge).not.toHaveClass("hidden");
+    });
+
     it("shows the goal-reached message when the rescaled total exactly equals 533", async () => {
       mockedUseUserStars.mockReturnValue({
         data: 5330,
