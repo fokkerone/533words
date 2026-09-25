@@ -91,6 +91,12 @@
       "ingested_at": "2026-09-25T12:00:00Z",
       "pages_created": [],
       "pages_updated": ["ui/session-state-pattern", "data/word-bank-schema", "Home", "log"]
+    },
+    {
+      "slug": "weighted-session-selection",
+      "ingested_at": "2026-09-25T18:00:00Z",
+      "pages_created": [],
+      "pages_updated": ["ui/session-state-pattern", "Home", "log"]
     }
   ]
 }

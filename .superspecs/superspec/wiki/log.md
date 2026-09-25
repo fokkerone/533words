@@ -97,3 +97,12 @@ Append-only activity log. Every ingest, query, and lint run appends an entry her
 - Test suite: 205/205 passing, 18/18 spec scenarios covered, no regressions
 - Notable: two scenario-coverage gaps were found and closed during this project's now-standard `/verify` pass — one during Task 1.1's own code review (the goal-distance sentence's own recalculation wasn't separately asserted, only the star badge's), one during `/verify` itself (the tablet-breakpoint-hiding CSS class had no test, verified via `toHaveClass` since jsdom can't evaluate real media queries). Separately, this feature's branch was created from a `main` that predated the still-open german-ui PR, so it initially executed against untranslated English UI text — caught and fixed by rebasing onto `superspec/german-ui` mid-execution, and documented as a new branching convention in `CLAUDE.md` (branch from the latest merged state, or from a still-open prior feature's branch if its PR hasn't landed yet).
 
+## [2026-09-25] ingest | weighted-session-selection: bias session selection toward the learner's weakest words
+
+- Created: (none — extended the existing session-state-pattern page rather than adding a new one)
+- Updated: ui/session-state-pattern.md (`startSession`'s weighted draw via the new exported `splitByRelativeScore` helper, and the testability decision to separate deterministic split logic from randomized draw logic), Home.md
+- Domains touched: ui
+- Spec: `superspec/specs/weighted-session-selection/spec.md`
+- Test suite: 212/212 passing, 8/8 spec scenarios covered, no regressions
+- Notable: no coverage gaps found during `/verify` this time — every scenario had a test written during execution itself, a first for this project's `/verify` history (every prior feature found and closed at least one gap during this stage). The grill session caught a genuine spec redundancy before execution (two scenarios that were mathematically the same case, described from two angles) and a testability improvement (pulling the weak/strong split into its own exported, deterministically-testable function rather than relying solely on repeated-draw statistical tests) — both resolved before any code was written, not discovered afterward.
+
