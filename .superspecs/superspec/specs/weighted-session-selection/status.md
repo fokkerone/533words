@@ -1,12 +1,12 @@
 # Weighted Session Selection — Status
 
 ## Phase
-1.3 — Plan › Grill ✅
+2.1 — Execute › Pick Spec ✅
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
 - [x] Spec written
-- [x] Spec fits context window (~6k / 200k)
+- [x] Spec fits context window (~10k / 200k)
 - [x] Spec grilled and stress-tested (GRILL.md)
 - [x] Wiki conflicts: none
 - [x] Techstack conflicts: none
