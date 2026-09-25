@@ -18,4 +18,10 @@ Populated during execution — one entry per task review.
 ## Wave 2
 
 ### Task 2.1: Translate the login/register pages and their tests
-_Pending_
+**Stage 1 — Spec compliance:** PASS. "Login" correctly preserved in all three spec-required spots (login title, login submit button, register's cross-link back to login) and never translated anywhere — verified by reading the diff directly. The shared Google-button text in `auth-form.tsx` was edited exactly once at its single ternary location, not duplicated per-page, matching the resolved ambiguity from GRILL.md. Auth error messages (`GENERIC_LOGIN_ERROR`, `ALREADY_REGISTERED_ERROR`, `GENERIC_REGISTER_ERROR`, `GENERIC_GOOGLE_ERROR`) are all translated string constants — the underlying non-enumeration logic (never surfacing Better Auth's raw error) is untouched, exactly as scoped.
+
+**Good catch, not in the original task brief:** the subagent noticed that `getByLabelText(/email/i)` / `/password/i` regexes would silently stop matching once the labels became "E-Mail"/"Passwort" (the hyphen breaks the substring match) and proactively updated them to `/e-mail/i`/`/passwort/i` — exactly the kind of "a stale assertion could silently stop testing the right thing" risk flagged in Wave 1's task brief, correctly generalized here without being told to.
+
+**Stage 2 — Code quality:** PASS. Clean, minimal diff — every changed line maps directly to a DISCUSS.md table row, no scope creep.
+
+**Verdict:** ✅ Approved, no findings. Independently re-verified: read both page diffs directly, confirmed "Login" placement and the single-edit-location claim for the Google button text, re-ran the full suite/lint/build myself (186/186, clean, clean).
