@@ -27,3 +27,11 @@ Each subagent receives:
 
 ## Human Checkpoints
 - After Wave 1: full verification before ship (single-wave, single-task feature)
+
+## Branch
+
+Branch name: `superspec/weighted-session-selection`
+Type: branch
+Worktree path: N/A
+Created from: `main` @ bc9b85c
+Created: 2026-09-25 (during `/discuss`, per this project's convention of branching as soon as planning docs need committing, since `main` is protected)
