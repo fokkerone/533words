@@ -5,6 +5,14 @@
 **Context estimate:** ~8k / 200k ✅
 **Started:** 2026-09-25
 
+## Branch
+
+Branch name: `superspec/german-ui`
+Type: branch
+Worktree path: N/A
+Created from: main @ dae8e28
+Created: 2026-09-25
+
 ## Execution Strategy
 
 Wave execution order: Wave 1 → Wave 2

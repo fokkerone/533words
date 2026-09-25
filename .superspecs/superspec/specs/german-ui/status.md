@@ -1,7 +1,7 @@
 # German UI (localize all remaining English chrome) — Status
 
 ## Phase
-2.1 — Execute › Pick Spec ✅
+2.2 — Execute › Branch ✅
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -10,7 +10,7 @@
 - [x] Spec grilled and stress-tested (GRILL.md)
 - [x] Wiki conflicts: none
 - [x] Techstack conflicts: none
-- [ ] Branch created
+- [x] Branch created (superspec/german-ui)
 - [ ] Subagent execution complete
 - [ ] All tests passing
 - [ ] Code review passed (no Critical findings)
