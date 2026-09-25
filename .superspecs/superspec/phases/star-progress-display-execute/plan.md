@@ -27,3 +27,10 @@ Each subagent receives:
 
 ## Human Checkpoints
 - After Wave 1: full verification before ship (single-wave feature, no intermediate wave checkpoint needed beyond the standard per-task review)
+
+## Branch
+
+Branch name: `superspec/star-progress-display`
+Type: branch
+Created from: `main` @ dae8e28 (rebased onto main @ 57bdb6b to pick up the protected-`main`/planning-docs-on-branch convention)
+Created: 2026-09-25
