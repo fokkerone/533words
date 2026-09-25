@@ -28,6 +28,22 @@ describe("RegisterPage", () => {
     mockedSignInSocial.mockReset();
   });
 
+  it("shows 'Konto erstellen' as the page title", () => {
+    render(<RegisterPage />);
+
+    expect(
+      screen.getByRole("heading", { name: /^konto erstellen$/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a 'Login' cross-link back to the login page (per the confirmed exception)", () => {
+    render(<RegisterPage />);
+
+    expect(
+      screen.getByRole("link", { name: /^login$/i }),
+    ).toHaveAttribute("href", "/login");
+  });
+
   it("redirects to / on successful registration", async () => {
     mockedSignUpEmail.mockResolvedValue({ data: {}, error: null } as never);
     render(<RegisterPage />);

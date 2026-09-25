@@ -26,6 +26,14 @@ describe("LoginPage", () => {
     mockedSignInSocial.mockReset();
   });
 
+  it("shows 'Login' as the page title (per the confirmed exception -- not translated to 'Anmelden')", () => {
+    render(<LoginPage />);
+
+    expect(
+      screen.getByRole("heading", { name: /^login$/i }),
+    ).toBeInTheDocument();
+  });
+
   it("redirects to / on successful login", async () => {
     mockedSignInEmail.mockResolvedValue({ data: {}, error: null } as never);
     render(<LoginPage />);
