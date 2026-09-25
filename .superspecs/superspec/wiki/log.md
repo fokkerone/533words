@@ -79,3 +79,12 @@ Append-only activity log. Every ingest, query, and lint run appends an entry her
 - Test suite: 185/185 passing, 7/7 spec scenarios covered, no regressions
 - Notable: the original request literally asked for a `user_id -> total` cross-table (a maintained cache), but this was explicitly talked out of during `/discuss` in favor of computing the sum on read (`SUM(score)` over `user_word_scores`) — no schema change needed, no drift risk. A scenario-coverage gap ("a failed flag does not change the badge") was found and closed during `/verify` itself, consistent with the pattern established across every prior feature in this project.
 
+## [2026-09-25] ingest | german-ui: localize all remaining English UI chrome to German
+
+- Created: patterns/german-ui-text.md
+- Updated: patterns/Home.md, Home.md
+- Domains touched: patterns
+- Spec: `superspec/specs/german-ui/spec.md`
+- Test suite: 190/190 passing, 14/14 spec scenarios accounted for (13 automated, 1 explicitly manually-verified by the user per GRILL.md's scoping decision — "no untranslated English text remains" is a visual completeness check, not automatable), no regressions
+- Notable: three scenario-coverage gaps (theme-toggle visible German text, login page title, register page title + login cross-link) were found and closed during `/verify` itself — in every case the underlying implementation was already correct, consistent with the pattern established across every prior feature in this project. The "Reveal" translation was corrected from an initially-proposed "Wort einblenden" (15 chars, mobile layout-overflow risk) to the user's own shorter "Aufdecken" (9 chars) during `/grill`.
+
