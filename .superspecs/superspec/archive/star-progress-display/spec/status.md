@@ -1,7 +1,13 @@
 # Star Progress Display — Status
 
 ## Phase
-3 — Verify ✅
+4 — Shipped ✅
+
+## Completed
+2026-09-25
+
+## PR
+https://github.com/fokkerone/533words/pull/2 (base: `superspec/german-ui`, stacked on PR #1 — retarget to `main` once #1 merges)
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -15,8 +21,8 @@
 - [x] All tests passing (205/205)
 - [x] Code review passed (no Critical findings)
 - [x] Wiki imported
-- [ ] PR created
-- [ ] Archived
+- [x] PR created
+- [x] Archived
 
 ## Test Results
 - Suite: 205 passing, 0 failing, 0 skipped
@@ -27,12 +33,6 @@
 ## Wiki Pages
 - [[ui/session-state-pattern]] — updated with the goal-distance message's visibility rules and the session-progress indicator derivation
 - [[data/word-bank-schema]] — updated with the "star total is not bounded below zero" note
-- [ ] Subagent execution complete
-- [ ] All tests passing
-- [ ] Code review passed (no Critical findings)
-- [ ] Wiki imported
-- [ ] PR created
-- [ ] Archived
 
 ## Slug
 star-progress-display
