@@ -22,3 +22,29 @@ Verified directly against `src/app/page.tsx` (lines 289-303):
 
 **Tests:** 196/196 passing · **Lint:** clean · **Build:** successful
 **Commit:** `be7edfd` (task 1.1, as rebased) + coverage-gap fix (uncommitted at time of writing, committed next)
+
+## Task 1.2: Add the session-progress indicator above the current word
+
+**Stage 1 — Spec Compliance:** ✅ Approved
+
+Verified directly against `src/app/page.tsx` (the new `<p>` inserted just above the practice-word-area `<div>`):
+- `{session.flagOrder.length + 1} / {session.total}` — matches all three "Session-Progress Indicator Shows Current Position" scenarios.
+- Gated on `session?.current` alone, placed inside the not-complete branch of the `complete && session ? (...) : (...)` ternary — correctly renders before *and* after reveal (no `revealed` condition on this element, unlike the Play button/word text below it), and is structurally absent from the completed-results branch, loading branch, error branch, and empty-word-bank branch — matches the "Visibility Matches the Active-Session UI" requirement and all four "Hidden ..." scenarios.
+- German `aria-label` (`` `Wort ${X} von ${Y}` ``), no `aria-live` — matches Non-Functional Requirements.
+
+**Stage 2 — Code Quality:** ✅ Approved, no findings
+
+- Single, minimal conditional block; consistent styling (`text-sm text-muted-foreground`) with adjacent header elements. No duplication, no unnecessary complexity.
+- Test suite is thorough: covers the "16/16 final word" scenario via direct `createSessionState`/`pickNextWord`/`flagWord` state construction + `saveSession` restore, rather than clicking through 15 words in the UI — a sensible, fast approach consistent with this file's existing test patterns.
+- Independently re-verified: full suite (204/204), lint, and build all clean.
+
+**Tests:** 204/204 passing (196 → 204, +8 new, 0 regressions) · **Lint:** clean · **Build:** successful
+**Commit:** `0d35912`
+
+---
+
+## Wave 1 Summary
+
+Both tasks complete, both reviews passed, no Critical findings. One Medium finding in Task 1.1's review (goal-distance recalculation coverage gap) was fixed immediately during review, not deferred. Total: 8 commits on `superspec/star-progress-display` (2 task commits + 1 coverage-gap fix + 5 docs/process commits, including the mid-task rebase onto `superspec/german-ui`).
+
+Final state: 204/204 tests passing, lint clean, build clean, no regressions.
