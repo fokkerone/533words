@@ -1,11 +1,11 @@
 title: Immutable Session State Pattern
-summary: How flashcard-session models a multi-step practice flow (pick → speak → reveal → flag) as pure, immutable state transitions, kept separate from React and from the DB. Extended by session-size-summary with a configurable session size and flag-order tracking, by editorial-redesign with an auto-advance consumer pattern, by user-accounts with a per-learner Home/PracticeScreen split, and by star-total with an independent header badge query.
-tags: [ui, flashcard-session, session-size-summary, editorial-redesign, user-accounts, star-total, state-management, react]
+summary: How flashcard-session models a multi-step practice flow (pick → speak → reveal → flag) as pure, immutable state transitions, kept separate from React and from the DB. Extended by session-size-summary with a configurable session size and flag-order tracking, by editorial-redesign with an auto-advance consumer pattern, by user-accounts with a per-learner Home/PracticeScreen split, by star-total with an independent header badge query, and by star-progress-display with a goal-distance header message and a session-progress indicator.
+tags: [ui, flashcard-session, session-size-summary, editorial-redesign, user-accounts, star-total, star-progress-display, state-management, react]
 spec: "[[flashcard-session]]"
 created: 2026-09-16
-updated: 2026-09-24
+updated: 2026-09-25
 provenance:
-  sources: [specs/flashcard-session/spec.md, specs/flashcard-session/GRILL.md, phases/flashcard-session-execute/review-log.md, specs/session-size-summary/spec.md, specs/session-size-summary/GRILL.md, phases/session-size-summary-execute/review-log.md, specs/editorial-redesign/spec.md, phases/editorial-redesign-execute/review-log.md, specs/user-accounts/spec.md, phases/user-accounts-execute/review-log.md, specs/star-total/spec.md, phases/star-total-execute/review-log.md]
+  sources: [specs/flashcard-session/spec.md, specs/flashcard-session/GRILL.md, phases/flashcard-session-execute/review-log.md, specs/session-size-summary/spec.md, specs/session-size-summary/GRILL.md, phases/session-size-summary-execute/review-log.md, specs/editorial-redesign/spec.md, phases/editorial-redesign-execute/review-log.md, specs/user-accounts/spec.md, phases/user-accounts-execute/review-log.md, specs/star-total/spec.md, phases/star-total-execute/review-log.md, specs/star-progress-display/DISCUSS.md, specs/star-progress-display/spec.md, specs/star-progress-display/GRILL.md, phases/star-progress-display-execute/review-log.md]
   extracted: 65%
   inferred: 30%
   ambiguous: 5%
@@ -100,13 +100,27 @@ The results-summary table (session-size-summary) needs each flagged word's *text
 **Because:** keeps the header self-sufficient regardless of what else is loaded on a given page — this app already has pages (`/login`, `/register`) outside the practice screen, so a header/badge that doesn't depend on the full 533-word bank having loaded is more robust if the header ever needs to appear elsewhere.
 **Trade-off:** one extra network query per page load that a derived value wouldn't need — accepted as negligible at this scale. See [[data/word-bank-schema]]'s "aggregate totals computed on read" entry for the full data-layer reasoning (including why this isn't a maintained cache table either).
 
+### Header goal-distance message — only rendered once real data has loaded, and hidden below `tablet`
+**Chose:** star-progress-display (2026-09-25) added a "Du benötigst noch X Sterne" / "Ziel erreicht! 🎉" message next to the star badge, driven directly by `useUserStars`'s raw `starTotal`/`isLoading`/`isError` — **not** `displayedStarTotal`'s existing 0-fallback. The message renders nothing at all while `starsLoading` or `starsError` is true, or while `starTotal` is `undefined`; only once a real value has loaded does it show either the distance sentence or the goal-reached message. The element also carries `hidden tablet:inline-flex` so it's absent below the `tablet` breakpoint (48rem/768px) entirely — not wrapped, not truncated.
+**Over:** Reusing `displayedStarTotal`'s 0-fallback for this element too (would have briefly shown "Du benötigst noch 533.0 Sterne" during every load, a misleading flash of a wrong value); or making the message wrap onto a second header line on narrow viewports instead of hiding.
+**Because:** grilled explicitly — a loading-state fallback of 0 makes sense for the star *badge* (a compact, always-present element where "0.0" briefly flashing is harmless), but embedding that same fallback into a full sentence risks showing a specific, wrong, confidently-stated number. Hiding below `tablet` was a direct user preference change mid-grill (from an initially-recommended `flex-wrap` solution) — the header already has many controls at that width, and the sentence is the longest single element in it.
+**Trade-off:** the star badge itself and the goal-distance message now have *different* fallback/visibility rules for the exact same underlying `useUserStars` query — worth remembering if either element is touched again: they are not interchangeable, and "loading" looks different for each (badge: shows "0.0"; message: renders nothing).
+**Testing note:** jsdom cannot evaluate real CSS media queries (same limitation as [[ui/design-tokens-theming]]'s Tailwind breakpoint tiers), so the `hidden`/`tablet:inline-flex` visibility is verified by asserting the Tailwind utility classes are present on the element (`toHaveClass("hidden", "tablet:inline-flex")`), not by an actual viewport resize.
+
+### Session-progress indicator — a static "X / Y" derived directly from `SessionState`, no new state
+**Chose:** star-progress-display (2026-09-25) added a `<p>` immediately above the practice-word-display area showing `{session.flagOrder.length + 1} / {session.total}` (e.g. "1 / 16" for the first word, "16 / 16" for the last), gated on `session?.current` alone — the same truthiness check the Play button and revealed-word text already used individually, but here applied without the `!revealed`/`revealed` split, so the indicator stays visible across the reveal transition rather than toggling with it.
+**Over:** Introducing a new counter field on `SessionState`, or deriving progress from `session.pool.length` instead of `flagOrder.length`.
+**Because:** `flagOrder.length + 1` and `session.total` were already exactly the values needed — no new state, no `session.ts` changes. Using `flagOrder.length` (rather than `pool.length`) matches how session-size-summary's results view already derives ordering from the same field, keeping one source of truth for "how many words have been flagged so far."
+**Trade-off:** none significant — this is a pure display derivation with no new state to keep in sync.
+**Accessibility:** static text with a German `aria-label` (`` `Wort ${X} von ${Y}` ``); explicitly **no** `aria-live` — grilled and confirmed the user did not want every word transition announced to screen-reader users, consistent with the rest of the header (the star badge also has no `aria-live`).
+
 ## Gotchas
 
 - **Two `flagWord` functions, same name, different jobs:** `session.ts`'s `flagWord(state, wordId, correct): SessionState` (pure, in-memory) collided in name with `words.ts`'s original DB-writing function. Caught in code review after both were built in parallel by separate subagents; the DB-writing one was renamed to `writeWordFlag` rather than aliasing imports in the UI layer. Worth remembering if adding more session-adjacent modules: `flagWord`/`flag*` is an easy name to collide on.
 - **Reveal state lives outside `SessionState` on purpose:** whether the current word's text is shown (`revealed`) is local `useState` in `page.tsx`, not part of the persisted session. Confirmed correct behavior in manual testing: reloading mid-session restores the same current word, but re-hides it (learner has to press Reveal again) — this wasn't explicitly speced but fell out naturally from the design and matches the spirit of "don't spoil the answer on refresh."
 
 ## Related
-- [[data/word-bank-schema]] — where the `Word`/score data this state operates on comes from (per-learner since user-accounts), and the "compute on read" star-total decision
+- [[data/word-bank-schema]] — where the `Word`/score data this state operates on comes from (per-learner since user-accounts), the "compute on read" star-total decision, and the negative-total note added by star-progress-display
 - [[patterns/fake-db-client-testing]] — how the DB-touching half of the flow (`writeWordFlag`) is tested
 - [[patterns/web-speech-voice-selection]] — the sibling required-vs-optional parameter reasoning `sessionSize` follows
 - [[patterns/per-user-scoped-storage]] — the `userId`-scoping convention `PracticeScreen`'s settings/session calls all follow
