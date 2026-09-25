@@ -292,8 +292,15 @@ function PracticeScreen({ userId }: { userId: string }) {
             className='inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-sm font-semibold tabular-nums'
           >
             <span aria-hidden='true'>⭐</span>
-            {displayedStarTotal}
+            {(displayedStarTotal / 10).toFixed(1)}
           </span>
+          {!starsLoading && !starsError && starTotal !== undefined && (
+            <span className='hidden tablet:inline-flex text-sm text-muted-foreground'>
+              {starTotal / 10 >= 533
+                ? "Ziel erreicht! 🎉"
+                : `Du benötigst noch ${(533 - starTotal / 10).toFixed(1)} Sterne`}
+            </span>
+          )}
           {identity && (
             <span className='max-w-[10rem] truncate text-sm text-muted-foreground'>
               {identity}
@@ -380,6 +387,14 @@ function PracticeScreen({ userId }: { userId: string }) {
             </div>
           ) : (
             <>
+              {session?.current && (
+                <p
+                  aria-label={`Wort ${session.flagOrder.length + 1} von ${session.total}`}
+                  className='text-sm text-muted-foreground'
+                >
+                  {session.flagOrder.length + 1} / {session.total}
+                </p>
+              )}
               <div className='flex flex-1 w-full items-center justify-center'>
                 {session?.current && !revealed && (
                   <div className='relative flex h-36 w-36 items-center justify-center tablet:h-48 tablet:w-48 desktop:h-60 desktop:w-60'>
