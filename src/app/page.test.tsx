@@ -1046,6 +1046,101 @@ describe("Home practice screen", () => {
     });
   });
 
+  describe("session-progress indicator", () => {
+    it("shows 1 / 16 for the first word of a 16-word session", async () => {
+      setupUseWords(makeWords(16));
+      renderHome();
+
+      await screen.findByRole("button", { name: /^abspielen$/i });
+      expect(screen.getByText("1 / 16")).toBeInTheDocument();
+    });
+
+    it("shows 2 / 16 after one word has been flagged", async () => {
+      setupUseWords(makeWords(16));
+      renderHome();
+
+      await screen.findByRole("button", { name: /^abspielen$/i });
+      fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
+
+      await waitFor(() => {
+        expect(mutateAsync).toHaveBeenCalledTimes(1);
+      });
+      expect(await screen.findByText("2 / 16")).toBeInTheDocument();
+    });
+
+    it("shows 16 / 16 for the final word of a 16-word session", async () => {
+      const words = makeWords(16);
+      setupUseWords(words);
+      let state: SessionState = createSessionState(words, 16);
+      for (let i = 0; i < 15; i++) {
+        state = pickNextWord(state);
+        state = flagWord(state, state.current!.id, true);
+      }
+      const withCurrent = pickNextWord(state);
+      saveSession<SessionState>(TEST_USER_ID, withCurrent);
+      renderHome();
+
+      expect(await screen.findByText("16 / 16")).toBeInTheDocument();
+    });
+
+    it("remains visible after reveal, for the same current word", async () => {
+      setupUseWords(makeWords(16));
+      renderHome();
+
+      await screen.findByRole("button", { name: /^abspielen$/i });
+      expect(screen.getByText("1 / 16")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
+      await screen.findByText(/^word\d+$/);
+      expect(screen.getByText("1 / 16")).toBeInTheDocument();
+    });
+
+    it("is not shown while the word bank is loading", () => {
+      mockedUseWords.mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useWords>);
+      renderHome();
+
+      expect(screen.queryByText(/^\d+ \/ \d+$/)).not.toBeInTheDocument();
+    });
+
+    it("is not shown when the word bank failed to load", () => {
+      mockedUseWords.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: new Error("boom"),
+      } as unknown as ReturnType<typeof useWords>);
+      renderHome();
+
+      expect(screen.queryByText(/^\d+ \/ \d+$/)).not.toBeInTheDocument();
+    });
+
+    it("is not shown when the word bank is empty", async () => {
+      setupUseWords([]);
+      renderHome();
+
+      await screen.findByText(/wortliste ist leer/i);
+      expect(screen.queryByText(/^\d+ \/ \d+$/)).not.toBeInTheDocument();
+    });
+
+    it("is not shown in the completed-session results view", async () => {
+      setupUseWords(makeWords(1));
+      renderHome();
+
+      await screen.findByRole("button", { name: /^abspielen$/i });
+      fireEvent.click(screen.getByRole("button", { name: /aufdecken/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^richtig$/i }));
+
+      await screen.findByText(/abgeschlossen/i);
+      expect(screen.queryByText(/^\d+ \/ \d+$/)).not.toBeInTheDocument();
+    });
+  });
+
   describe("navigation region", () => {
     it("groups the reveal action and both flag actions together for an active, incomplete session", async () => {
       setupUseWords(makeWords(2));

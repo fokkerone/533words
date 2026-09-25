@@ -387,6 +387,14 @@ function PracticeScreen({ userId }: { userId: string }) {
             </div>
           ) : (
             <>
+              {session?.current && (
+                <p
+                  aria-label={`Wort ${session.flagOrder.length + 1} von ${session.total}`}
+                  className='text-sm text-muted-foreground'
+                >
+                  {session.flagOrder.length + 1} / {session.total}
+                </p>
+              )}
               <div className='flex flex-1 w-full items-center justify-center'>
                 {session?.current && !revealed && (
                   <div className='relative flex h-36 w-36 items-center justify-center tablet:h-48 tablet:w-48 desktop:h-60 desktop:w-60'>
