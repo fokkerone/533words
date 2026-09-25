@@ -6,9 +6,9 @@ Started: 2026-09-25
 
 | Task | Status | Review | Notes |
 |------|--------|--------|-------|
-| 1.1 | ⏳ in progress | — | |
+| 1.1 | ✅ done | ✅ passed | No findings |
 
 ## Review Log Summary
-(populated by /code-review)
+See `review-log.md` — approved at both stages, 0 findings of any severity. 212/212 tests passing.
 
-## Completed: (pending)
+## Completed: 2026-09-25
