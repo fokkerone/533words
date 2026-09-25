@@ -30,13 +30,13 @@ describe("LoginPage", () => {
     mockedSignInEmail.mockResolvedValue({ data: {}, error: null } as never);
     render(<LoginPage />);
 
-    fireEvent.change(screen.getByLabelText(/email/i), {
+    fireEvent.change(screen.getByLabelText(/e-mail/i), {
       target: { value: "a@b.com" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText(/passwort/i), {
       target: { value: "correcthorse" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^login$/i }));
 
     await waitFor(() => {
       expect(mockedSignInEmail).toHaveBeenCalledWith(
@@ -55,16 +55,16 @@ describe("LoginPage", () => {
     } as never);
     render(<LoginPage />);
 
-    fireEvent.change(screen.getByLabelText(/email/i), {
+    fireEvent.change(screen.getByLabelText(/e-mail/i), {
       target: { value: "wrong@b.com" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText(/passwort/i), {
       target: { value: "wrongpass" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^login$/i }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent(/invalid email or password/i);
+    expect(alert).toHaveTextContent(/e-mail oder passwort ungültig/i);
     expect(alert).not.toHaveTextContent(/some very specific internal detail/i);
     expect(pushMock).not.toHaveBeenCalled();
   });
@@ -73,16 +73,16 @@ describe("LoginPage", () => {
     mockedSignInEmail.mockRejectedValue(new Error("network exploded"));
     render(<LoginPage />);
 
-    fireEvent.change(screen.getByLabelText(/email/i), {
+    fireEvent.change(screen.getByLabelText(/e-mail/i), {
       target: { value: "a@b.com" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText(/passwort/i), {
       target: { value: "somepass" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^login$/i }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent(/invalid email or password/i);
+    expect(alert).toHaveTextContent(/e-mail oder passwort ungültig/i);
     expect(alert).not.toHaveTextContent(/network exploded/i);
     expect(pushMock).not.toHaveBeenCalled();
   });

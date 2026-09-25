@@ -32,13 +32,13 @@ describe("RegisterPage", () => {
     mockedSignUpEmail.mockResolvedValue({ data: {}, error: null } as never);
     render(<RegisterPage />);
 
-    fireEvent.change(screen.getByLabelText(/email/i), {
+    fireEvent.change(screen.getByLabelText(/e-mail/i), {
       target: { value: "new@b.com" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText(/passwort/i), {
       target: { value: "correcthorse" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^(create account|sign up|register)$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^konto erstellen$/i }));
 
     await waitFor(() => {
       expect(mockedSignUpEmail).toHaveBeenCalledWith(
@@ -60,16 +60,16 @@ describe("RegisterPage", () => {
     } as never);
     render(<RegisterPage />);
 
-    fireEvent.change(screen.getByLabelText(/email/i), {
+    fireEvent.change(screen.getByLabelText(/e-mail/i), {
       target: { value: "taken@b.com" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText(/passwort/i), {
       target: { value: "correcthorse" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^(create account|sign up|register)$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^konto erstellen$/i }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent(/already/i);
+    expect(alert).toHaveTextContent(/bereits/i);
     expect(pushMock).not.toHaveBeenCalled();
   });
 
@@ -77,13 +77,13 @@ describe("RegisterPage", () => {
     mockedSignUpEmail.mockRejectedValue(new Error("network exploded"));
     render(<RegisterPage />);
 
-    fireEvent.change(screen.getByLabelText(/email/i), {
+    fireEvent.change(screen.getByLabelText(/e-mail/i), {
       target: { value: "a@b.com" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText(/passwort/i), {
       target: { value: "somepass" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^(create account|sign up|register)$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^konto erstellen$/i }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).not.toHaveTextContent(/network exploded/i);
