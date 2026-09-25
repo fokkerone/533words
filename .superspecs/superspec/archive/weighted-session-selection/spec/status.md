@@ -1,7 +1,13 @@
 # Weighted Session Selection — Status
 
 ## Phase
-3 — Verify ✅
+4 — Shipped ✅
+
+## Completed
+2026-09-25
+
+## PR
+https://github.com/fokkerone/533words/pull/4
 
 ## Checklist
 - [x] Discussion complete (DISCUSS.md)
@@ -15,8 +21,8 @@
 - [x] All tests passing (212/212)
 - [x] Code review passed (no Critical findings)
 - [x] Wiki imported
-- [ ] PR created
-- [ ] Archived
+- [x] PR created
+- [x] Archived
 
 ## Test Results
 - Suite: 212 passing, 0 failing, 0 skipped
